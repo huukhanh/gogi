@@ -1,0 +1,15 @@
+{
+  "name": "khanh-plugins",
+  "description": "Khanh's Claude Code plugins",
+  "owner": { "name": "Khanh Nguyen H" },
+  "plugins": [
+    {
+      "name": "team",
+      "source": "./plugins/team",
+      "description": "Intent-routed multi-agent team: coordinator + dev + techlead + pm + investigator, with agreement-before-code, frozen-tree reviews, run knowledge hub, comms log, token stats and learned user preferences.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "tags": ["multi-agent", "implement", "review", "investigate"]
+    }
+  ]
+}
