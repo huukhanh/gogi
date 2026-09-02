@@ -1,6 +1,6 @@
-# Team conventions — single source of truth
+# Gōgi conventions — single source of truth
 
-Every team agent (`dev`, `techlead`, `pm`, `investigator`) reads this file first. The `team` skill and every playbook under `skills/team/playbooks/` follow it. Role files and playbooks contain only what is specific to them; if something here conflicts with a role file, this file wins.
+Every team agent (`dev`, `techlead`, `pm`, `investigator`) reads this file first. The `gogi:team` skill and every playbook under `skills/team/playbooks/` follow it. Role files and playbooks contain only what is specific to them; if something here conflicts with a role file, this file wins.
 
 ## Roles and ownership
 
@@ -12,7 +12,7 @@ Every team agent (`dev`, `techlead`, `pm`, `investigator`) reads this file first
 | **pm** | *what*: ticket, ACs, business rules, defaults, edge-case behaviour, scope, ship tradeoffs | no |
 | **investigator** | *why*: root cause with evidence and confidence | no |
 
-**Spawning:** agents are plugin-scoped — `subagent_type: "team:dev" | "team:techlead" | "team:pm" | "team:investigator"`; always pass `name:` (`dev`, `techlead`, `pm`, `investigator-N`) so SendMessage and the comms log use the plain role names. Cross-domain questions go to the owner. PM and techlead consult each other (cost ↔ desired behaviour); neither rules in the other's domain. The dev asks whichever role owns the question; a mixed question goes to the PM, who gets cost from the techlead first. Roles are spawned only when the playbook needs them or a need appears mid-run.
+**Spawning:** agents are plugin-scoped — `subagent_type: "gogi:dev" | "gogi:techlead" | "gogi:pm" | "gogi:investigator"`; always pass `name:` (`dev`, `techlead`, `pm`, `investigator-N`) so SendMessage and the comms log use the plain role names. Cross-domain questions go to the owner. PM and techlead consult each other (cost ↔ desired behaviour); neither rules in the other's domain. The dev asks whichever role owns the question; a mixed question goes to the PM, who gets cost from the techlead first. Roles are spawned only when the playbook needs them or a need appears mid-run.
 
 ## Decisions: `[small]` vs `[big]`
 
@@ -50,7 +50,7 @@ Blocking = stop and wait (anything architectural, any unanswered behaviour quest
 ## Git rules
 
 - Never `git push`, never open a PR. The final code state is **uncommitted** for the user's review.
-- **WIP snapshot commits** are the one exception: before any pivot, revert, or deletion of more than trivial work, `git add -A && git commit -m "wip(team): <label> snapshot"` — untracked files deleted without one are unrecoverable. The coordinator `git reset --soft`s all snapshots before the final report.
+- **WIP snapshot commits** are the one exception: before any pivot, revert, or deletion of more than trivial work, `git add -A && git commit -m "wip(gogi): <label> snapshot"` — untracked files deleted without one are unrecoverable. The coordinator `git reset --soft`s all snapshots before the final report.
 - Branch creation is fine (feature branch off the default branch if currently on it).
 
 ## Frozen-tree reviews
@@ -59,7 +59,7 @@ No review starts until the dev confirms "stopped editing" and `git status --shor
 
 ## Skill policy
 
-Only this plugin's skills (`team:*`) and user-level skills (`~/.claude/skills/`) may be invoked. Project-defined skills are never invoked; a project's rules are **read as files** (root `CLAUDE.md`, nested `CLAUDE.md`s in sub-projects, `.claude/rules/**`) — skip what doesn't exist, never invent rules.
+Only this plugin's skills (`gogi:*`) and user-level skills (`~/.claude/skills/`) may be invoked. Project-defined skills are never invoked; a project's rules are **read as files** (root `CLAUDE.md`, nested `CLAUDE.md`s in sub-projects, `.claude/rules/**`) — skip what doesn't exist, never invent rules.
 
 The plugin is **self-contained**: every deliverable (reports, plans, `PR-PRE.md`, investigations) is produced by its own roles and written into `$RUN`, never into a tracked `docs/` path that would dirty the reviewable diff. PR worktrees live at `.worktrees/pr-<N>` and are kept until the user asks to remove them.
 
@@ -74,7 +74,7 @@ The plugin is **self-contained**: every deliverable (reports, plans, `PR-PRE.md`
 
 ## Knowledge hub (the run directory)
 
-One directory per run, inside the project, git-invisible: `docs/.local/team/{YYYY-MM-DD}-{intent}-{slug}/` (`git check-ignore docs/.local/` — if not ignored, add `docs/.local/` to `.git/info/exclude`, never to the tracked `.gitignore`). The coordinator creates it and passes the path (`$RUN`) to every agent. It exists so that **each file is read once by one agent and reused by all** — never let three roles cold-read the same twenty files.
+One directory per run, inside the project, git-invisible: `docs/.local/gogi/{YYYY-MM-DD}-{intent}-{slug}/` (`git check-ignore docs/.local/` — if not ignored, add `docs/.local/` to `.git/info/exclude`, never to the tracked `.gitignore`). The coordinator creates it and passes the path (`$RUN`) to every agent. It exists so that **each file is read once by one agent and reused by all** — never let three roles cold-read the same twenty files.
 
 | File | Written by | Purpose |
 |---|---|---|

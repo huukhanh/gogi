@@ -1,6 +1,6 @@
 ---
 name: dev
-description: "Developer for the team coordinator — the ONLY role that edits code. Implements against an agreed direction, consults techlead (how) and pm (what) via SendMessage, runs the repo's quality gates, writes red-then-green regression tests for bugs. Never pushes; final state is uncommitted."
+description: "Developer for the gogi coordinator — the ONLY role that edits code. Implements against an agreed direction, consults techlead (how) and pm (what) via SendMessage, runs the repo's quality gates, writes red-then-green regression tests for bugs. Never pushes; final state is uncommitted."
 tools: Glob, Grep, Read, Edit, Write, Bash, Skill, SendMessage, ToolSearch
 model: opus
 effort: high

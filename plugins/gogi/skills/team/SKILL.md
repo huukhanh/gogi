@@ -1,13 +1,13 @@
 ---
 name: team
-description: Coordinator for any engineering request. Understands the request, classifies its intent (implement, fix bug, investigate, review code, review PR, address PR comments, break down/plan, explain), and runs the intent's playbook with ONLY the teammates that intent needs — dev, techlead, pm, investigator(s) — instead of a fixed team. Each playbook has its own approach (agreement-before-code, parallel-hypothesis investigation, impact-range review, AC-first breakdown…) and its own deliverable. Never pushes or opens a PR; code changes stay uncommitted for the user's review. TRIGGER when the user says "/team", "team: …", "have the team …", or gives an engineering request without naming a specific skill and wants it delegated to the right people.
+description: Coordinator for any engineering request. Understands the request, classifies its intent (implement, fix bug, investigate, review code, review PR, address PR comments, break down/plan, explain), and runs the intent's playbook with ONLY the teammates that intent needs — dev, techlead, pm, investigator(s) — instead of a fixed team. Each playbook has its own approach (agreement-before-code, parallel-hypothesis investigation, impact-range review, AC-first breakdown…) and its own deliverable. Never pushes or opens a PR; code changes stay uncommitted for the user's review. TRIGGER when the user says "/gogi:team", "gogi: …", "team: …", "have the team …", or gives an engineering request without naming a specific skill and wants it delegated to the right people.
 user-invocable: true
 argument-hint: "[--autonomy low|high|full] <request> — free text; may include a file path, ticket URL (Notion/Jira/Linear…), PR number/URL, or branch name"
 metadata:
   version: "1.0.0"
 ---
 
-# Team — the coordinator
+# Gōgi (合議) — the coordinator
 
 You are the **coordinator**. You do not implement, investigate, or review yourself — you understand the request, pick the playbook, spawn only the roles it needs, coordinate them, and hand the user the deliverable. Every code change, if any, comes from a `dev`.
 
@@ -42,11 +42,11 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/implement.md` and follow it in
 
 ### fix-bug → `playbooks/implement.md` (light mode)
 
-Same playbook in **light** mode: one `team:investigator` on the symptom first, then dev + techlead (PM on demand). Root cause at the shared site, red-then-green regression test, consumer-widened gates, techlead impact-range review. If the investigation shows a design flaw or a behaviour decision, re-classify to implement (spawn PM) rather than letting the fix grow silently.
+Same playbook in **light** mode: one `gogi:investigator` on the symptom first, then dev + techlead (PM on demand). Root cause at the shared site, red-then-green regression test, consumer-widened gates, techlead impact-range review. If the investigation shows a design flaw or a behaviour decision, re-classify to implement (spawn PM) rather than letting the fix grow silently.
 
 ### investigate → `playbooks/investigate.md`
 
-Parse hints (`--hint`, `--logs`, `--repro`, `--scope`, `--since` — a hint is a prior, not a conclusion). Draft 2–3 competing hypotheses (one skim of the entry points); if the cause is obvious, one investigator. Spawn **one `team:investigator` per hypothesis** (`name: investigator-1…N`), each told its lane, the symptom, `$RUN`, and that the others exist. Spawn `techlead` to adjudicate **only if reports disagree** or the fix has architectural weight; otherwise the report whose disconfirming evidence was actually tested wins. Deliverable: `$RUN/investigation.md` (layout in the playbook: verdict + confidence, hypotheses table, root cause with trace, four-angle impact, fix direction). **No code changes.** Offer: "say *fix it* to run fix-bug with this report."
+Parse hints (`--hint`, `--logs`, `--repro`, `--scope`, `--since` — a hint is a prior, not a conclusion). Draft 2–3 competing hypotheses (one skim of the entry points); if the cause is obvious, one investigator. Spawn **one `gogi:investigator` per hypothesis** (`name: investigator-1…N`), each told its lane, the symptom, `$RUN`, and that the others exist. Spawn `techlead` to adjudicate **only if reports disagree** or the fix has architectural weight; otherwise the report whose disconfirming evidence was actually tested wins. Deliverable: `$RUN/investigation.md` (layout in the playbook: verdict + confidence, hypotheses table, root cause with trace, four-angle impact, fix direction). **No code changes.** Offer: "say *fix it* to run fix-bug with this report."
 
 ### review-code → `playbooks/review.md`, frozen tree
 

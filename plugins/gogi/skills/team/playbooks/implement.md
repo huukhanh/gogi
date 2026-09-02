@@ -5,7 +5,7 @@ Read by the coordinator when the intent is **implement** or **fix-bug**. `conven
 ## Modes
 
 - **Full** (implement: features, refactors, multi-AC tickets): pm + techlead + dev.
-- **Light** (fix-bug: small, findable cause): dev + techlead only; memo and agreement fit in one exchange each; **PM spawned on demand** the moment a behaviour question appears. The coordinator spawns **one `team:investigator`** on the symptom *before* the dev starts (or reuses an existing investigation report); the dev fixes the root cause at the shared site, red-then-green regression test, consumer-widened gates. Review: techlead only (PM acceptance review only if a PM was spawned). **Re-classify instead of growing**: if the bug turns out to be a design flaw, needs a behaviour decision, or touches more than a handful of files, stop, report, and continue in full mode — a "small fix" never silently becomes a feature.
+- **Light** (fix-bug: small, findable cause): dev + techlead only; memo and agreement fit in one exchange each; **PM spawned on demand** the moment a behaviour question appears. The coordinator spawns **one `gogi:investigator`** on the symptom *before* the dev starts (or reuses an existing investigation report); the dev fixes the root cause at the shared site, red-then-green regression test, consumer-widened gates. Review: techlead only (PM acceptance review only if a PM was spawned). **Re-classify instead of growing**: if the bug turns out to be a design flaw, needs a behaviour decision, or touches more than a handful of files, stop, report, and continue in full mode — a "small fix" never silently becomes a feature.
 
 ## Step 1 — Stack + branch
 
@@ -13,7 +13,7 @@ The request is already resolved and classified by the coordinator (task type: fe
 
 ## Step 2 — Knowledge hub + spawn
 
-Create `$RUN = docs/.local/team/{date}-{implement|fix-bug}-{slug}/` per conventions and **seed `context.md` first** — one scout pass (an `Explore` agent or your own skim): ticket text + ACs, governing repo docs with load-bearing excerpts, a file map. Then spawn the roles for the mode **in one message** (plus the heartbeat timer in that same message), each prompt carrying `$RUN`, stack, branch, task type, mode, `$PREFS`, `$AUTONOMY`, and the instruction to start from `context.md`, extend `facts.md`, and message with pointers into the hub.
+Create `$RUN = docs/.local/gogi/{date}-{implement|fix-bug}-{slug}/` per conventions and **seed `context.md` first** — one scout pass (an `Explore` agent or your own skim): ticket text + ACs, governing repo docs with load-bearing excerpts, a file map. Then spawn the roles for the mode **in one message** (plus the heartbeat timer in that same message), each prompt carrying `$RUN`, stack, branch, task type, mode, `$PREFS`, `$AUTONOMY`, and the instruction to start from `context.md`, extend `facts.md`, and message with pointers into the hub.
 
 - **pm** (full) — "Produce your behaviour brief (`$RUN/pm-brief.md`, Summary ≤30 lines + appendix); send me a pointer; stay available for behaviour consults from dev and techlead."
 - **techlead** — "Produce your direction memo (`$RUN/techlead-memo.md`, Summary ≤30 lines + appendix; technical only — behaviour → pm); send me a pointer; stay available for consults."

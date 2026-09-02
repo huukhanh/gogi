@@ -1,9 +1,18 @@
 {
-  "name": "team",
-  "displayName": "Team — coordinator, dev, techlead, PM, investigator",
+  "name": "gogi",
+  "displayName": "Gōgi (合議) — coordinator, dev, techlead, PM, investigator",
   "description": "Delegates any engineering request to the right roles: a coordinator classifies intent (implement, fix-bug, investigate, review-code, review-pr, pr-comments, breakdown, explain) and runs that playbook with only the agents it needs. Agreement before code, an autonomy level (low | high | full) for how much the team may decide alone, frozen-tree reviews, per-run knowledge hub + comms log + token stats, learned user preferences. Never pushes or opens a PR.",
   "version": "1.0.0",
-  "author": { "name": "Khanh Nguyen H" },
+  "author": {
+    "name": "rootless"
+  },
   "license": "MIT",
-  "keywords": ["multi-agent", "workflow", "implement", "review", "investigate", "planning"]
+  "keywords": [
+    "multi-agent",
+    "workflow",
+    "implement",
+    "review",
+    "investigate",
+    "planning"
+  ]
 }

@@ -1,11 +1,11 @@
 {
-  "name": "khanh-plugins",
-  "description": "Khanh's Claude Code plugins",
-  "owner": { "name": "Khanh Nguyen H" },
+  "name": "gogi",
+  "description": "Gōgi (合議) — a Claude Code plugin that runs any engineering request as a small council of roles that agree before anyone acts.",
+  "owner": { "name": "rootless" },
   "plugins": [
     {
-      "name": "team",
-      "source": "./plugins/team",
+      "name": "gogi",
+      "source": "./plugins/gogi",
       "description": "Intent-routed multi-agent team: coordinator + dev + techlead + pm + investigator, with agreement-before-code, an autonomy level (low/high/full), frozen-tree reviews, run knowledge hub, comms log, token stats and learned user preferences.",
       "version": "1.0.0",
       "category": "productivity",
