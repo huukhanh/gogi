@@ -27,7 +27,7 @@ For VALID: what's wrong, before/after fix, related effects (other files, tests).
 
 ## 3. Decide (coordinator → user)
 
-Show the triage table; **one `AskUserQuestion`**: which VALID fixes to apply (grouped), which replies to keep. Nothing is applied before the answer.
+Show the triage table; **one `AskUserQuestion`**: which VALID fixes to apply (grouped), which replies to keep. Nothing is applied before the answer. At `$AUTONOMY` `high`/`full` skip the question: every VALID fix is applied, every NOT_VALID reply kept, and NEEDS DISCUSSION rulings follow the autonomy table (hard stops still ask at `high`); the table is shown in the final report instead.
 
 ## 4. Apply (dev), re-check (techlead)
 

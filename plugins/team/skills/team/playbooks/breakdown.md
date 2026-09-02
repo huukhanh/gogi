@@ -4,7 +4,7 @@
 
 ## 1. Requirements (pm)
 
-Restate the goal. Fill the gaps the request leaves — surface (API / job / CLI / UI), data scope (entities, fields, relationships), constraints (performance, security, compliance), success (observable outcomes) — as **testable ACs**. Decide `[small]` gaps and record them; list `[big]` gaps as questions **with a recommendation and the tradeoff**, grouped so the coordinator can ask them in one call. Scope: explicitly in / explicitly out (follow-ups named).
+Restate the goal. Fill the gaps the request leaves — surface (API / job / CLI / UI), data scope (entities, fields, relationships), constraints (performance, security, compliance), success (observable outcomes) — as **testable ACs**. Decide `[small]` gaps and record them; list `[big]` gaps as questions **with a recommendation and the tradeoff**, grouped so the coordinator can ask them in one call. At `$AUTONOMY` `high`/`full` decide them yourself (apply the recommendation, tag `[big → decided @high]`/`@full`) and list them under *Decisions*; only hard stops at `high` remain questions. Scope: explicitly in / explicitly out (follow-ups named).
 
 ## 2. Technical design (techlead)
 

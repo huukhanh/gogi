@@ -9,24 +9,24 @@ Read by the coordinator when the intent is **implement** or **fix-bug**. `conven
 
 ## Step 1 — Stack + branch
 
-The request is already resolved and classified by the coordinator (task type: feature | bug | refactor). Detect the stack(s) the change touches from the repo layout (a single app, or several sub-projects such as a backend and a frontend — gates run per stack touched). If on the default branch, create `feat/|fix/|refactor/<slug>`. Unrelated uncommitted changes already in the tree → tell the user and ask whether to proceed.
+The request is already resolved and classified by the coordinator (task type: feature | bug | refactor). Detect the stack(s) the change touches from the repo layout (a single app, or several sub-projects such as a backend and a frontend — gates run per stack touched). If on the default branch, create `feat/|fix/|refactor/<slug>`. Unrelated uncommitted changes already in the tree → tell the user and ask whether to proceed (at `full`: WIP-snapshot them per conventions, proceed, and flag it in the final report).
 
 ## Step 2 — Knowledge hub + spawn
 
-Create `$RUN = docs/.local/team/{date}-{implement|fix-bug}-{slug}/` per conventions and **seed `context.md` first** — one scout pass (an `Explore` agent or your own skim): ticket text + ACs, governing repo docs with load-bearing excerpts, a file map. Then spawn the roles for the mode **in one message** (plus the heartbeat timer in that same message), each prompt carrying `$RUN`, stack, branch, task type, mode, `$PREFS`, and the instruction to start from `context.md`, extend `facts.md`, and message with pointers into the hub.
+Create `$RUN = docs/.local/team/{date}-{implement|fix-bug}-{slug}/` per conventions and **seed `context.md` first** — one scout pass (an `Explore` agent or your own skim): ticket text + ACs, governing repo docs with load-bearing excerpts, a file map. Then spawn the roles for the mode **in one message** (plus the heartbeat timer in that same message), each prompt carrying `$RUN`, stack, branch, task type, mode, `$PREFS`, `$AUTONOMY`, and the instruction to start from `context.md`, extend `facts.md`, and message with pointers into the hub.
 
 - **pm** (full) — "Produce your behaviour brief (`$RUN/pm-brief.md`, Summary ≤30 lines + appendix); send me a pointer; stay available for behaviour consults from dev and techlead."
 - **techlead** — "Produce your direction memo (`$RUN/techlead-memo.md`, Summary ≤30 lines + appendix; technical only — behaviour → pm); send me a pointer; stay available for consults."
 - **dev** — "Prep-read from the hub; write no code until the brief and memo are agreed — check them against your prep and agree or object with reasons. Consult techlead (how) and pm (what)."
 - **investigator** (light, first) — "Root-cause this symptom; report to `$RUN/investigation.md`." Hand the report to the dev.
 
-When the brief and memo arrive, write pointers + the key rulings into `$RUN/agreement.md` and point the dev and each other owner at it (never forward bodies). Any `[big]` question in the brief goes to the user **now**, before the agreement; record answers in `agreement.md`. Once agreed, write the *Agreed direction* section — that is what "done" names.
+When the brief and memo arrive, write pointers + the key rulings into `$RUN/agreement.md` and point the dev and each other owner at it (never forward bodies). Any `[big]` question in the brief goes to the user **now**, before the agreement (at `high`/`full` the PM has already decided it in the brief — verify each is tagged with its tier and level; only hard stops at `high` still go to the user); record answers in `agreement.md`. Once agreed, write the *Agreed direction* section — that is what "done" names.
 
 ## Step 3 — Agreement → implementation
 
 - **No code before the logged agreement** (dev agrees to both documents; pm and techlead cross-check each other's). Objections loop back to the owner. "Done" must name the agreement.
 - **Build bottom-up in dependency order** — contract/schema → domain → application → infra → adapter/UI → wiring → tests — so each layer compiles against a finished one below it and the gates can run early on the lower layers.
-- **Direction change** → dev stops editing; owners re-agree; PM tiers; `[big]` → **snapshot first** (WIP commit per conventions), then `AskUserQuestion` with the PM's recommendation; you ratify and relay.
+- **Direction change** → dev stops editing; owners re-agree; PM tiers; `[big]` → **snapshot first** (WIP commit per conventions), then `AskUserQuestion` with the PM's recommendation — or, at `high`/`full`, the PM's own decision per the autonomy table; you ratify and relay.
 - Stay out of consults unless the PM escalates a `[big]` — **or a decision reverses twice**. On each heartbeat tick scan new `comms.md` entries; the same topic ruled a second time is your cue: close it in `agreement.md` (both states acceptable → pick the one the dev is currently building), tell all roles it is closed, forbid re-opening. Don't wait to be asked.
 
 ## Step 4 — Done → freeze → reviews

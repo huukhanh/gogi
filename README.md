@@ -22,10 +22,22 @@ Enable per project in `.claude/settings.json` (`enabledPlugins`) or globally in 
 ## Use
 
 ```
-/team:team <request>      # one entry point — classifies the intent, runs that playbook
+/team:team <request>                       # one entry point — classifies the intent, runs that playbook
+/team:team --autonomy high <request>       # let the PM decide the [big] gaps too; only hard stops are asked
+/team:team --autonomy full <request>       # never ask; every decision is logged for review in the final report
 ```
 
 Intents: implement · fix-bug · investigate · review-code · review-pr · pr-comments · breakdown · explain.
+
+**Autonomy** (`--autonomy`, default `low`) sets how much the team may decide without you. Every decision is tiered the same way at every level; the level only changes who answers:
+
+| Level | `[small]` gaps | `[big]` blockers | Hard stops (destructive, data, auth/money/PII, cross-team contracts) |
+|---|---|---|---|
+| `low` | PM decides | you are asked | you are asked |
+| `high` | PM decides | PM decides | you are asked |
+| `full` | PM decides | PM decides | PM picks the safest reversible option; reported first |
+
+Missing inputs (a repro, a log, which of two intents you meant) are still asked at every level. No level ever allows a push or a PR. A standing choice can be saved as a `[habit]` in your preferences (`When running /team → autonomy high`).
 Roles (agents): `team:dev` (only one that edits code), `team:techlead` (how), `team:pm` (what), `team:investigator` (why).
 
 ## What a run leaves behind

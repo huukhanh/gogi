@@ -18,6 +18,19 @@ Every team agent (`dev`, `techlead`, `pm`, `investigator`) reads this file first
 
 The PM tiers every behaviour/scope decision. **`[small]`** — localised, cheap to reverse, no auth/money/PII semantics (wording, ordering, a default matching precedent, a log field): decided now with a one-line rationale, logged, listed in the final report under *"Decisions made on your behalf — review"*. **`[big]`** — direction, scope change, contract shape (endpoint/DTO/DB column), auth/visibility, money/PII, discarding substantial finished work, ship-now-with-deviation vs wait: formulated with a recommendation and sent to the coordinator, who asks the user via `AskUserQuestion` **before anyone acts**. Unsure → `[big]`. **Only the coordinator talks to the user.**
 
+### Autonomy level — how much the team may decide alone
+
+Every run carries `$AUTONOMY` ∈ `low | high | full` (from `--autonomy`, a phrase in the request, a `[habit]` in `$PREFS`, else **`low`**). The coordinator states it in the opening line and passes it to every spawned role. It changes *who answers* a decision, never the tiering, the logging, or the git rules:
+
+| Level | `[small]` | `[big]` | Hard stops |
+|---|---|---|---|
+| **low** (default) | PM decides, logs | user is asked before anyone acts | user is asked |
+| **high** | PM decides, logs | **PM decides** — applies its own recommendation, logs it tagged `[big → decided @high]` | user is asked |
+| **full** | PM decides, logs | PM decides, logs | **PM decides the safest reversible option**, logs it tagged `[hard-stop → decided @full]`, and the final report opens with these |
+
+**Hard stops** (the only things `high` still asks about): discarding or reverting substantial finished work · anything that deletes or rewrites data (destructive migrations, backfills, resets) · auth / visibility / money / PII semantics · a contract change consumed by another team or service · a scope change that adds a new user-facing surface the request did not name.
+
+At every level: a decision the owner takes on the user's behalf is written into the binding file with its tier, the level it was decided under, and a one-line rationale, and appears in the final report under *"Decisions made on your behalf — review"* (grouped `[small]` / `[big]` / hard stops). Autonomy governs **decisions**, not **missing inputs**: a run that cannot proceed without something only the user holds (a repro, a log, a credential, which of two intents was meant) still asks — or stops and reports — at any level. `git push` / opening a PR never become allowed.
 **A ruling exists only in its binding file.** Decisions are *made by editing* the binding artifact (`agreement.md`, the memo, the brief) and *announced* with a pointer — `"memo §7 updated: per-stage line"` plus at most two lines. A ruling stated in a message but absent from the file is void; a reader who finds message and file disagreeing follows the file and says so. Never edit the file and describe a different state in a message. (Observed failure: memo and messages diverged → five reversals of one `[small]` decision in 25 minutes, zero code change.)
 
 **Reversal cap.** A decision may be reversed **once**, and only on a *new fact* (a citation, a measured cost, a rule) — never on re-weighing the same tradeoff. A second reversal on the same topic is not made by the owner: it goes to the coordinator, who closes the topic in `agreement.md` (either state is acceptable when both satisfy the ACs — the cost of churn exceeds the difference) and no role re-opens it. The coordinator watches `comms.md` for the same topic recurring and steps in at the second reversal without being asked.
@@ -111,4 +124,4 @@ Any code change made **after** the frozen-tree reviews (a user follow-up, a merg
 
 ## Final report
 
-The coordinator ends every run with one message: the deliverable (inline or path), gates if code changed, consults and rulings, decisions made on the user's behalf, **rules applied from `$PREFS` and the harvest diff (new / promoted / contradicted rules)**, open questions, the session totals line from `session.md` (input / output tokens, per-agent breakdown available in the file), the run directory `$RUN` (transcript in `comms.md`), and the single next step the user can say to continue — then stops.
+The coordinator ends every run with one message: the deliverable (inline or path), gates if code changed, consults and rulings, decisions made on the user's behalf (grouped by tier; hard stops decided under `full` first), **rules applied from `$PREFS` and the harvest diff (new / promoted / contradicted rules)**, open questions, the session totals line from `session.md` (input / output tokens, per-agent breakdown available in the file), the run directory `$RUN` (transcript in `comms.md`), and the single next step the user can say to continue — then stops.
