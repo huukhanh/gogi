@@ -1,8 +1,8 @@
 # Playbook: breakdown — from a request to a plan the team can implement
 
-`pm` owns the behaviour half, `techlead` the technical half; they reconcile; the coordinator asks the user the `[big]` questions before the plan is final. No dev. `conventions.md` binds everything here.
+`po` owns the behaviour half, `techlead` the technical half; they reconcile; the coordinator asks the user the `[big]` questions before the plan is final. No dev. `conventions.md` binds everything here.
 
-## 1. Requirements (pm)
+## 1. Requirements (po)
 
 Restate the goal. Fill the gaps the request leaves — surface (API / job / CLI / UI), data scope (entities, fields, relationships), constraints (performance, security, compliance), success (observable outcomes) — as **testable ACs**. Decide `[small]` gaps and record them; list `[big]` gaps as questions **with a recommendation and the tradeoff**, grouped so the coordinator can ask them in one call. At `$AUTONOMY` `high`/`full` decide them yourself (apply the recommendation, tag `[big → decided @high]`/`@full`) and list them under *Decisions*; only hard stops at `high` remain questions. Scope: explicitly in / explicitly out (follow-ups named).
 
@@ -22,7 +22,7 @@ Start from `context.md`; read the affected code, not assumptions.
 
 ## 3. Reconcile
 
-Each reads the other's half. Behaviour that is expensive → pm reconsiders or escalates `[big]`. Technical choice that changes a behaviour → pm's call. Disagreements are settled in the plan file, once (reversal cap applies).
+Each reads the other's half. Behaviour that is expensive → po reconsiders or escalates `[big]`. Technical choice that changes a behaviour → po's call. Disagreements are settled in the plan file, once (reversal cap applies).
 
 ## 4. Tasks
 

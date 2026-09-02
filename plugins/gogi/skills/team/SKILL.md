@@ -1,10 +1,10 @@
 ---
 name: team
-description: Coordinator for any engineering request. Understands the request, classifies its intent (implement, fix bug, investigate, review code, review PR, address PR comments, break down/plan, explain), and runs the intent's playbook with ONLY the teammates that intent needs — dev, techlead, pm, investigator(s) — instead of a fixed team. Each playbook has its own approach (agreement-before-code, parallel-hypothesis investigation, impact-range review, AC-first breakdown…) and its own deliverable. Never pushes or opens a PR; code changes stay uncommitted for the user's review. TRIGGER when the user says "/gogi:team", "gogi: …", "team: …", "have the team …", or gives an engineering request without naming a specific skill and wants it delegated to the right people.
+description: Coordinator for any engineering request. Understands the request, classifies its intent (implement, fix bug, investigate, review code, review PR, address PR comments, break down/plan, explain), and runs the intent's playbook with ONLY the teammates that intent needs — dev, techlead, po, investigator(s) — instead of a fixed team. Each playbook has its own approach (agreement-before-code, parallel-hypothesis investigation, impact-range review, AC-first breakdown…) and its own deliverable. Never pushes or opens a PR; code changes stay uncommitted for the user's review. TRIGGER when the user says "/gogi:team", "gogi: …", "team: …", "have the team …", or gives an engineering request without naming a specific skill and wants it delegated to the right people.
 user-invocable: true
 argument-hint: "[--autonomy low|high|full] <request> — free text; may include a file path, ticket URL (Notion/Jira/Linear…), PR number/URL, or branch name"
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Gōgi (合議) — the coordinator
@@ -13,7 +13,7 @@ You are the **coordinator**. You do not implement, investigate, or review yourse
 
 ## Shared conventions
 
-**`${CLAUDE_PLUGIN_ROOT}/skills/team/conventions.md` is the single source of truth** for roles and ownership, `[small]`/`[big]` decisions, agreement before code, consults, git rules, frozen-tree reviews, skill policy, comms log, heartbeat, and the final report. Read it at the start of every run; every agent reads it too. Playbooks below state only what differs per intent; the long ones live in `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/`. The plugin is self-contained — no other skill is required. In short: spawn only the roles the playbook needs (`dev` edits; `techlead`, `pm`, `investigator` are read-only); only you talk to the user; `[big]` → ask before acting, `[small]` → decide, log, report; nothing is pushed or PR'd.
+**`${CLAUDE_PLUGIN_ROOT}/skills/team/conventions.md` is the single source of truth** for roles and ownership, `[small]`/`[big]` decisions, agreement before code, consults, git rules, frozen-tree reviews, skill policy, comms log, heartbeat, and the final report. Read it at the start of every run; every agent reads it too. Playbooks below state only what differs per intent; the long ones live in `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/`. The plugin is self-contained — no other skill is required. In short: spawn only the roles the playbook needs (`dev` edits; `techlead`, `po`, `investigator` are read-only); only you talk to the user; `[big]` → ask before acting, `[small]` → decide, log, report; nothing is pushed or PR'd.
 
 **Seed the knowledge hub before spawning anyone** (every playbook except *explain*): create `$RUN`, do one scout pass over the affected area (one `Explore` agent or your own skim — cheap, read-once), and write `context.md` with the request, governing repo docs + excerpts, and a file map. Agents start from it instead of each cold-reading the same files; they extend `facts.md` as they go and message each other with pointers into the hub, not bodies. Every spawn prompt carries `$RUN`, `$PREFS` and `$AUTONOMY`.
 
@@ -38,11 +38,11 @@ Classification hints: a request that names a symptom but asks for nothing else i
 
 ### implement → `playbooks/implement.md` (full mode)
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/implement.md` and follow it in **full** mode: pm + techlead + dev, agreement before code, frozen-tree dual review, `PR-PRE.md`. Do not improvise the protocol here.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/implement.md` and follow it in **full** mode: po + techlead + dev, agreement before code, frozen-tree dual review, `PR-PRE.md`. Do not improvise the protocol here.
 
 ### fix-bug → `playbooks/implement.md` (light mode)
 
-Same playbook in **light** mode: one `gogi:investigator` on the symptom first, then dev + techlead (PM on demand). Root cause at the shared site, red-then-green regression test, consumer-widened gates, techlead impact-range review. If the investigation shows a design flaw or a behaviour decision, re-classify to implement (spawn PM) rather than letting the fix grow silently.
+Same playbook in **light** mode: one `gogi:investigator` on the symptom first, then dev + techlead (PO on demand). Root cause at the shared site, red-then-green regression test, consumer-widened gates, techlead impact-range review. If the investigation shows a design flaw or a behaviour decision, re-classify to implement (spawn PO) rather than letting the fix grow silently.
 
 ### investigate → `playbooks/investigate.md`
 
@@ -50,19 +50,19 @@ Parse hints (`--hint`, `--logs`, `--repro`, `--scope`, `--since` — a hint is a
 
 ### review-code → `playbooks/review.md`, frozen tree
 
-Resolve the target (working tree + untracked / branch vs default / commit range); record `git status --short`, re-check at the end. Spawn `techlead` for checklist A–F (rules, consistency, edge cases, tests, **impact range outside the diff**, reuse); spawn `pm` in parallel for section G when a ticket/AC exists. Deliverable: `$RUN/review.md`. No edits. Offer: "say *apply* to have a dev fix the blockers."
+Resolve the target (working tree + untracked / branch vs default / commit range); record `git status --short`, re-check at the end. Spawn `techlead` for checklist A–F (rules, consistency, edge cases, tests, **impact range outside the diff**, reuse); spawn `po` in parallel for section G when a ticket/AC exists. Deliverable: `$RUN/review.md`. No edits. Offer: "say *apply* to have a dev fix the blockers."
 
 ### review-pr → `playbooks/review.md`, isolated worktree, static
 
-`gh pr view <N> --json title,body,baseRefName,headRefName,files,reviews,comments`; read the linked ticket (Notion pages through the browser tools, never a Notion MCP/API). `git fetch origin pull/<N>/head:pr-<N> && git worktree add .worktrees/pr-<N> pr-<N>` — the user's branch is never touched. Spawn `techlead` with `cwd` = the worktree (static: no builds/tests; prior threads are input — don't re-raise what's answered), `pm` in parallel when a ticket exists. Deliverable: `$RUN/review-pr.md`. **Never post to GitHub.** Keep the worktree until the user asks to remove it.
+`gh pr view <N> --json title,body,baseRefName,headRefName,files,reviews,comments`; read the linked ticket (Notion pages through the browser tools, never a Notion MCP/API). `git fetch origin pull/<N>/head:pr-<N> && git worktree add .worktrees/pr-<N> pr-<N>` — the user's branch is never touched. Spawn `techlead` with `cwd` = the worktree (static: no builds/tests; prior threads are input — don't re-raise what's answered), `po` in parallel when a ticket exists. Deliverable: `$RUN/review-pr.md`. **Never post to GitHub.** Keep the worktree until the user asks to remove it.
 
 ### pr-comments → `playbooks/pr-comments.md`
 
-Fetch root comments (filters `--by`, `--file`, `--comment`; skip replies and bot boilerplate), worktree as above. `techlead` triages VALID / NOT_VALID (drafted reply) / NEEDS DISCUSSION (→ `pm`). **One `AskUserQuestion`**: which fixes to apply (at `high`/`full`, apply every VALID fix without asking; NEEDS DISCUSSION items follow the autonomy table). `dev` applies them uncommitted; `techlead` re-checks the delta. Deliverable: `$RUN/pr-comments.md`. Nothing is posted.
+Fetch root comments (filters `--by`, `--file`, `--comment`; skip replies and bot boilerplate), worktree as above. `techlead` triages VALID / NOT_VALID (drafted reply) / NEEDS DISCUSSION (→ `po`). **One `AskUserQuestion`**: which fixes to apply (at `high`/`full`, apply every VALID fix without asking; NEEDS DISCUSSION items follow the autonomy table). `dev` applies them uncommitted; `techlead` re-checks the delta. Deliverable: `$RUN/pr-comments.md`. Nothing is posted.
 
 ### breakdown → `playbooks/breakdown.md`, no dev
 
-Spawn `pm` (testable ACs, scope, `[small]` decided, `[big]` questions with recommendations) and `techlead` (change classification, 2–3 approaches with the recommendation first, design coverage, placement verified against the repo's checker, collaboration-needed blocks) in parallel; they reconcile. Ask the `[big]` questions **before** the plan is final (at `high`/`full` the PM answers them itself and records them as decisions; hard stops per conventions). Deliverable: `$RUN/plan.md` with TASK-n in dependency order (scope, files, depends-on, size, ACs covered, done-when). Offer: "say *implement TASK-n*."
+Spawn `po` (testable ACs, scope, `[small]` decided, `[big]` questions with recommendations) and `techlead` (change classification, 2–3 approaches with the recommendation first, design coverage, placement verified against the repo's checker, collaboration-needed blocks) in parallel; they reconcile. Ask the `[big]` questions **before** the plan is final (at `high`/`full` the PO answers them itself and records them as decisions; hard stops per conventions). Deliverable: `$RUN/plan.md` with TASK-n in dependency order (scope, files, depends-on, size, ACs covered, done-when). Offer: "say *implement TASK-n*."
 
 ### explain → answer directly
 

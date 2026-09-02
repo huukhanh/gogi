@@ -1,6 +1,6 @@
 # Gōgi conventions — single source of truth
 
-Every team agent (`dev`, `techlead`, `pm`, `investigator`) reads this file first. The `gogi:team` skill and every playbook under `skills/team/playbooks/` follow it. Role files and playbooks contain only what is specific to them; if something here conflicts with a role file, this file wins.
+Every team agent (`dev`, `techlead`, `po`, `investigator`) reads this file first. The `gogi:team` skill and every playbook under `skills/team/playbooks/` follow it. Role files and playbooks contain only what is specific to them; if something here conflicts with a role file, this file wins.
 
 ## Roles and ownership
 
@@ -9,14 +9,14 @@ Every team agent (`dev`, `techlead`, `pm`, `investigator`) reads this file first
 | **coordinator** (the skill run) | understanding the request, picking the playbook, spawning roles, relaying to/from the user, final report | no |
 | **dev** | every code change; quality gates; tests | **yes — the only one** |
 | **techlead** | *how*: architecture, placement, patterns, dependencies, schema shape, gates, impact range | no |
-| **pm** | *what*: ticket, ACs, business rules, defaults, edge-case behaviour, scope, ship tradeoffs | no |
+| **po** (PO / BA — the client's proxy) | *what*: analyses the ticket, ACs, business rules and precedent, then decides defaults, edge-case behaviour, scope, ship tradeoffs within the autonomy level | no |
 | **investigator** | *why*: root cause with evidence and confidence | no |
 
-**Spawning:** agents are plugin-scoped — `subagent_type: "gogi:dev" | "gogi:techlead" | "gogi:pm" | "gogi:investigator"`; always pass `name:` (`dev`, `techlead`, `pm`, `investigator-N`) so SendMessage and the comms log use the plain role names. Cross-domain questions go to the owner. PM and techlead consult each other (cost ↔ desired behaviour); neither rules in the other's domain. The dev asks whichever role owns the question; a mixed question goes to the PM, who gets cost from the techlead first. Roles are spawned only when the playbook needs them or a need appears mid-run.
+**Spawning:** agents are plugin-scoped — `subagent_type: "gogi:dev" | "gogi:techlead" | "gogi:po" | "gogi:investigator"`; always pass `name:` (`dev`, `techlead`, `po`, `investigator-N`) so SendMessage and the comms log use the plain role names. Cross-domain questions go to the owner. PO and techlead consult each other (cost ↔ desired behaviour); neither rules in the other's domain. The dev asks whichever role owns the question; a mixed question goes to the PO, who gets cost from the techlead first. Roles are spawned only when the playbook needs them or a need appears mid-run.
 
 ## Decisions: `[small]` vs `[big]`
 
-The PM tiers every behaviour/scope decision. **`[small]`** — localised, cheap to reverse, no auth/money/PII semantics (wording, ordering, a default matching precedent, a log field): decided now with a one-line rationale, logged, listed in the final report under *"Decisions made on your behalf — review"*. **`[big]`** — direction, scope change, contract shape (endpoint/DTO/DB column), auth/visibility, money/PII, discarding substantial finished work, ship-now-with-deviation vs wait: formulated with a recommendation and sent to the coordinator, who asks the user via `AskUserQuestion` **before anyone acts**. Unsure → `[big]`. **Only the coordinator talks to the user.**
+The PO tiers every behaviour/scope decision. **`[small]`** — localised, cheap to reverse, no auth/money/PII semantics (wording, ordering, a default matching precedent, a log field): decided now with a one-line rationale, logged, listed in the final report under *"Decisions made on your behalf — review"*. **`[big]`** — direction, scope change, contract shape (endpoint/DTO/DB column), auth/visibility, money/PII, discarding substantial finished work, ship-now-with-deviation vs wait: formulated with a recommendation and sent to the coordinator, who asks the user via `AskUserQuestion` **before anyone acts**. Unsure → `[big]`. **Only the coordinator talks to the user.**
 
 ### Autonomy level — how much the team may decide alone
 
@@ -24,9 +24,9 @@ Every run carries `$AUTONOMY` ∈ `low | high | full` (from `--autonomy`, a phra
 
 | Level | `[small]` | `[big]` | Hard stops |
 |---|---|---|---|
-| **low** (default) | PM decides, logs | user is asked before anyone acts | user is asked |
-| **high** | PM decides, logs | **PM decides** — applies its own recommendation, logs it tagged `[big → decided @high]` | user is asked |
-| **full** | PM decides, logs | PM decides, logs | **PM decides the safest reversible option**, logs it tagged `[hard-stop → decided @full]`, and the final report opens with these |
+| **low** (default) | PO decides, logs | user is asked before anyone acts | user is asked |
+| **high** | PO decides, logs | **PO decides** — applies its own recommendation, logs it tagged `[big → decided @high]` | user is asked |
+| **full** | PO decides, logs | PO decides, logs | **PO decides the safest reversible option**, logs it tagged `[hard-stop → decided @full]`, and the final report opens with these |
 
 **Hard stops** (the only things `high` still asks about): discarding or reverting substantial finished work · anything that deletes or rewrites data (destructive migrations, backfills, resets) · auth / visibility / money / PII semantics · a contract change consumed by another team or service · a scope change that adds a new user-facing surface the request did not name.
 
@@ -37,15 +37,15 @@ At every level: a decision the owner takes on the user's behalf is written into 
 
 ## Direction documents: summary + appendix
 
-The PM brief and the techlead memo each open with **`## Summary` — at most 30 lines** — followed by numbered appendix sections (full SQL, file lists, test lists, template text). Other roles read the Summary by default and open an appendix section only when pointed at it (`memo §3`). The Summary is what the agreement is made on; an appendix section that contradicts the Summary is a bug in the document. Rulings that change a document update **both** the Summary line and the section, and mark the superseded text rather than deleting it.
+The PO brief and the techlead memo each open with **`## Summary` — at most 30 lines** — followed by numbered appendix sections (full SQL, file lists, test lists, template text). Other roles read the Summary by default and open an appendix section only when pointed at it (`memo §3`). The Summary is what the agreement is made on; an appendix section that contradicts the Summary is a bug in the document. Rulings that change a document update **both** the Summary line and the section, and mark the superseded text rather than deleting it.
 
 ## Agreement before code
 
-Direction documents (PM brief, techlead memo) are proposals. The dev checks them against their own prep reading and replies with explicit agreement or objections with reasons; PM and techlead cross-check each other's document. Work starts only on a logged agreement, and "done" names it. A direction change re-enters the same handshake: the dev **stops editing immediately**, the owners re-agree, the coordinator ratifies (PM tiers it; `[big]` → user). Snapshot before any pivot (below).
+Direction documents (PO brief, techlead memo) are proposals. The dev checks them against their own prep reading and replies with explicit agreement or objections with reasons; PO and techlead cross-check each other's document. Work starts only on a logged agreement, and "done" names it. A direction change re-enters the same handshake: the dev **stops editing immediately**, the owners re-agree, the coordinator ratifies (PO tiers it; `[big]` → user). Snapshot before any pivot (below).
 
 ## Consults
 
-Blocking = stop and wait (anything architectural, any unanswered behaviour question). Non-blocking = state the default you proceed with. One consult, one decision: the answer is applied; disagree once with a reason, then follow it. Never guess a behaviour or contract — the PM decides or escalates.
+Blocking = stop and wait (anything architectural, any unanswered behaviour question). Non-blocking = state the default you proceed with. One consult, one decision: the answer is applied; disagree once with a reason, then follow it. Never guess a behaviour or contract — the PO decides or escalates.
 
 ## Git rules
 
@@ -65,7 +65,7 @@ The plugin is **self-contained**: every deliverable (reports, plans, `PR-PRE.md`
 
 ## User preferences (project memory — learn the user's habits)
 
-`$PREFS = ~/.claude/projects/$(pwd | sed 's#[/.]#-#g')/memory/user-preferences.md` — a compact, project-scoped list of `When <scene> → do <action>` rules distilled from what the user has asked for, corrected, or decided before. It is part of Claude Code's per-project memory, so the main session already has it; **the coordinator and the PM read it at the start of every run** and pass `$PREFS` to every spawned role.
+`$PREFS = ~/.claude/projects/$(pwd | sed 's#[/.]#-#g')/memory/user-preferences.md` — a compact, project-scoped list of `When <scene> → do <action>` rules distilled from what the user has asked for, corrected, or decided before. It is part of Claude Code's per-project memory, so the main session already has it; **the coordinator and the PO read it at the start of every run** and pass `$PREFS` to every spawned role.
 
 - **Apply, don't re-ask.** A `[habit]` rule (seen ≥2× or stated as standing) is executed proactively and listed in the final report under *"applied from your preferences"*. A `[once]` rule is done with a note, or offered. A `[big]` question whose answer is already a recorded `[habit]` is **downgraded**: apply the habit, record it, don't ask. A `[small]` default is chosen to match recorded preferences first, repo precedent second.
 - **Harvest at the end of every run** (coordinator, before the final report): read `comms.md` for every `user →` entry and every `[big]` answer, plus any correction the user made mid-run, and turn each into a candidate rule — *the scene that triggered it, generalised one level* (not "add the missing index on orders.customer_id" but "when a comment names a known limit and its small upgrade, ship the upgrade"). Merge into `$PREFS`: an existing rule seen again → bump its count / promote `[once]` → `[habit]`; a contradiction → demote to `[once]` and flag it in the report for the user to settle; a new scene → new `[once]` line. Show the diff of `$PREFS` in the final report so the user can veto a wrong lesson.
@@ -80,7 +80,7 @@ One directory per run, inside the project, git-invisible: `docs/.local/gogi/{YYY
 |---|---|---|
 | `context.md` | coordinator, **before spawning** (one scout pass: `Explore`-style skim of the area) | request/ticket text, ACs, stack, branch, the repo docs that govern this area with their load-bearing excerpts, a file map of the touched area (`path — one line what it is`) |
 | `facts.md` | every agent, append-only | verified facts with `file:line` citations — `- [role HH:MM] user_settings.reminder_enabled exists, bool default false — migrations/0001_init.sql:42` |
-| `agreement.md` | coordinator | the PM brief, the techlead memo, objections, and the **current agreed direction** (updated on every re-agreement; a superseded section is marked, not deleted) |
+| `agreement.md` | coordinator | the PO brief, the techlead memo, objections, and the **current agreed direction** (updated on every re-agreement; a superseded section is marked, not deleted) |
 | `comms.md` | every agent | the message log (below) |
 | `session.md` / `session.json` | coordinator, via script | session id, branch, Claude Code version, time window, and **per-agent + total token usage** (fresh input / cache write / cache read / output), turns, tool-call counts |
 | reports, plans, `PR-PRE.md` | the producing role | deliverables |
@@ -95,7 +95,7 @@ One directory per run, inside the project, git-invisible: `docs/.local/gogi/{YYY
 
 ```bash
 printf '%s\n' "<the full message>" | ${CLAUDE_PLUGIN_ROOT}/scripts/log.sh "$RUN" <sender> <recipient[,recipient]> "<kind>"
-# roles: coordinator | dev | techlead | pm | investigator-N | user | all
+# roles: coordinator | dev | techlead | po | investigator-N | user | all
 # kinds: brief | memo | consult | answer | "decision [small]" | "decision [big]" | question-relay | review | report | status
 ```
 
@@ -116,7 +116,7 @@ The heartbeat is **verified**: `session-stats.sh` counts the coordinator's `slee
 
 ## Read-only roles' hard rules
 
-`techlead`, `pm`, `investigator`: never edit, create, or delete project files; never run state-changing commands (no commit/push, installs, migrations, writes); read-only Bash only. Sole exception: the comms-log append. Never message the user — the channel is the coordinator (and teammates).
+`techlead`, `po`, `investigator`: never edit, create, or delete project files; never run state-changing commands (no commit/push, installs, migrations, writes); read-only Bash only. Sole exception: the comms-log append. Never message the user — the channel is the coordinator (and teammates).
 
 ## After the reviews: follow-up changes
 

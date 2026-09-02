@@ -1,6 +1,6 @@
 # Playbook: review — checklist, severity, report
 
-Used by `techlead` for every technical review (implement's frozen-tree review, review-code, review-pr) and by `pm` for the acceptance half. `conventions.md` binds everything here.
+Used by `techlead` for every technical review (implement's frozen-tree review, review-code, review-pr) and by `po` for the acceptance half. `conventions.md` binds everything here.
 
 ## Ground rules
 
@@ -24,7 +24,7 @@ Used by `techlead` for every technical review (implement's frozen-tree review, r
 
 **F. Reuse / duplication** — new code vs existing helpers, utils, patterns across the repo; duplicated logic with behavioural divergence is a finding.
 
-**G. Doc / spec gap analysis (when a ticket, AC list, or `--docs` exists — the PM owns this in team runs)** — two-way: every requirement → traceable to code *and* a test (missing = finding); every meaningful change → covered by the doc (undocumented = scope creep / silent contract change); mismatches quoted both sides. No docs → one line saying it was skipped and which doc would have helped.
+**G. Doc / spec gap analysis (when a ticket, AC list, or `--docs` exists — the PO owns this in team runs)** — two-way: every requirement → traceable to code *and* a test (missing = finding); every meaningful change → covered by the doc (undocumented = scope creep / silent contract change); mismatches quoted both sides. No docs → one line saying it was skipped and which doc would have helped.
 
 ## Severity
 
@@ -34,7 +34,7 @@ Used by `techlead` for every technical review (implement's frozen-tree review, r
 | **Important** | works but deviates from convention, untested non-trivial logic, real unhandled edge case, quiet contract change — fix before merge |
 | **Suggestion** | preference, micro-improvement, future-proofing — author may decline without justification |
 
-## Report (`$RUN/review-techlead.md`, `review-pm.md`, `review.md`, or `review-pr.md`)
+## Report (`$RUN/review-techlead.md`, `review-po.md`, `review.md`, or `review-pr.md`)
 
 ```markdown
 # Review: {target}   — **Overall**: PASS | NEEDS FIXES | BLOCKED
