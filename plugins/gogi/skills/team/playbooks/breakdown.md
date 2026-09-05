@@ -8,7 +8,7 @@ Restate the goal. Fill the gaps the request leaves — surface (API / job / CLI 
 
 ## 2. Technical design (techlead)
 
-Start from `context.md`; read the affected code, not assumptions.
+Start from `context.md` (the scout's file map, precedent and governing docs); read the affected code, not assumptions.
 
 - **Classify the change**: schema-only · behavioural · infra · mixed. It sets the shape of the plan.
 - **Explore 2–3 approaches, lead with the recommendation**:

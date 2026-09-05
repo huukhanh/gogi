@@ -1,8 +1,8 @@
 # Playbook: pr-comments — triage review comments, fix the approved ones
 
-Coordinator fetches and filters; `techlead` triages (behaviour-level comments → `po`); the user picks; `dev` applies. Nothing is ever posted to GitHub. `conventions.md` binds everything here.
+The scout fetches and filters into `context.md`; the coordinator adds the worktree; `techlead` triages (behaviour-level comments → `po`); the user picks; `dev` applies. Nothing is ever posted to GitHub. `conventions.md` binds everything here.
 
-## 1. Fetch (coordinator)
+## 1. Fetch (scout; worktree by the coordinator)
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/<N>/comments --paginate      # inline review comments
@@ -10,7 +10,7 @@ gh pr view <N> --json title,headRefName,baseRefName,reviews,comments   # review 
 git fetch origin pull/<N>/head:pr-<N> && git worktree add .worktrees/pr-<N> pr-<N>   # if not already checked out
 ```
 
-Filters from the request: `--by <login>` · `--file <path>` · `--comment <id>` · default = **all unresolved root comments**. Per comment keep: `id`, `user.login`, `path`, `line`/`original_line`, `diff_hunk`, `body`, `in_reply_to_id`, `created_at`.
+Filters from the request: `--by <login>` · `--file <path>` · `--comment <id>` · default = **all unresolved root comments**. The scout writes the filtered list into `context.md § Ticket / PR` as a table; per comment keep: `id`, `user.login`, `path`, `line`/`original_line`, `diff_hunk`, `body`, `in_reply_to_id`, `created_at`.
 
 - **Root comments only** — skip replies (`in_reply_to_id` set); the thread is read as context for its root.
 - **Skip bot boilerplate** ("Thank you for using…", walkthrough summaries) — list them under *Skipped* with the reason. Bot *findings* (e.g. an actionable CodeRabbit item) are triaged like any other.

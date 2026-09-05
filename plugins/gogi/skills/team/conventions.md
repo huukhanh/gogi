@@ -1,22 +1,73 @@
 # Gōgi conventions — single source of truth
 
-Every team agent (`dev`, `techlead`, `po`, `investigator`) reads this file first. The `gogi:team` skill and every playbook under `skills/team/playbooks/` follow it. Role files and playbooks contain only what is specific to them; if something here conflicts with a role file, this file wins.
+Every team agent (`scout`, `monitor`, `dev`, `techlead`, `po`, `investigator`) reads this file first. The `gogi:team` skill and every playbook under `skills/team/playbooks/` follow it. Role files and playbooks contain only what is specific to them; if something here conflicts with a role file, this file wins.
 
 ## Roles and ownership
 
 | Role | Owns | Edits code? |
 |---|---|---|
-| **coordinator** (the skill run) | understanding the request, picking the playbook, spawning roles, relaying to/from the user, final report | no |
+| **coordinator** (the skill run) | classifying the request, spawning roles, relaying to/from the user, watching budgets, rotating agents, final report — **nothing else** | no |
+| **scout** | the first pass: fetches the ticket/PR, skims the area, seeds `context.md` + `facts.md`; answers *explain* requests; drafts hypothesis lanes for investigations | no |
+| **monitor** | the heartbeat: waits in `watch.sh`, refreshes stats every tick, reads new comms entries, and wakes the coordinator only with an actionable event (rotate candidate, reversal loop, frozen/moved tree, report, digest) | no |
 | **dev** | every code change; quality gates; tests | **yes — the only one** |
 | **techlead** | *how*: architecture, placement, patterns, dependencies, schema shape, gates, impact range | no |
 | **po** (PO / BA — the client's proxy) | *what*: analyses the ticket, ACs, business rules and precedent, then decides defaults, edge-case behaviour, scope, ship tradeoffs within the autonomy level | no |
 | **investigator** | *why*: root cause with evidence and confidence | no |
 
-**Spawning:** agents are plugin-scoped — `subagent_type: "gogi:dev" | "gogi:techlead" | "gogi:po" | "gogi:investigator"`; always pass `name:` (`dev`, `techlead`, `po`, `investigator-N`) so SendMessage and the comms log use the plain role names. Cross-domain questions go to the owner. PO and techlead consult each other (cost ↔ desired behaviour); neither rules in the other's domain. The dev asks whichever role owns the question; a mixed question goes to the PO, who gets cost from the techlead first. Roles are spawned only when the playbook needs them or a need appears mid-run.
+**The coordinator is a pure coordinator.** It runs on the most expensive model in the run, so it never reads source files, never opens a full report or brief (Summaries and pointers only), never scouts, never investigates, never reviews, never rules on a behaviour or technical question. Content decisions belong to `po` and `techlead`; reading belongs to `scout` and the role that needs it. It never waits on a timer either: the `monitor` watches the run and wakes it. The only judgments the coordinator makes are procedural: which intent, which roles, when to ask the user, when to rotate an agent, when to close a reversal loop, when to start reviews.
+
+**Spawning:** agents are plugin-scoped — `subagent_type: "gogi:scout" | "gogi:monitor" | "gogi:dev" | "gogi:techlead" | "gogi:po" | "gogi:investigator"`; always pass `name:` (`scout`, `monitor`, `dev`, `techlead`, `po`, `investigator-N`; a rotated successor adds a generation suffix, `dev-2`) so SendMessage and the comms log use the plain role names. Cross-domain questions go to the owner. PO and techlead consult each other (cost ↔ desired behaviour); neither rules in the other's domain. The dev asks whichever role owns the question; a mixed question goes to the PO, who gets cost from the techlead first. Roles are spawned only when the playbook needs them or a need appears mid-run.
+
+## Turn discipline — binds every role and the coordinator
+
+Every tool round-trip re-sends the agent's whole context (measured: 204 turns × ~220k tokens on one run — half the session's cost). The unit of cost is the **turn**, not the tool call, so:
+
+- **Batch every independent tool call into one message.** Several `Read`s, several `Bash` commands (`cmd1; cmd2; cmd3`), a `log.sh` append plus its `SendMessage`, a worklog update plus the milestone's other calls, all spawns of a phase — one message each. Never `ls`/`cat`/`grep` one file per turn.
+- **Think before the call**: what will I need next? Fetch it now, in the same message.
+- **Trim tool output at the source**: `| tail -20`, `-q`, `--no-color`, `2>&1 | grep -E 'FAIL|ok|error'` on test runs. A 3,000-line log in context is paid for on every later turn.
+- **Run gates as one combined command**; re-run only the failing gate.
+- **Read the hub, not the repo**: `context.md` and `facts.md` exist so that each file is read once by one agent (conventions § Knowledge hub).
+- Dependent calls (B needs A's output) are the only reason for a second turn.
+
+## Context budget, worklogs and rotation
+
+An agent's context grows with every turn and is re-sent on every turn; past a point it is cheaper to replace the agent than to keep it. Every agent therefore keeps a **worklog** it could be restarted from, and the coordinator **rotates** agents that outgrow their budget. The agent does not lose the work: the worklog and the hub are its memory; the conversation is not.
+
+### The worklog — `$RUN/agents/<lineage>.md`
+
+One file per agent lineage, named after the spawn name without generation suffix (`agents/dev.md`, `agents/techlead.md`, `agents/investigator-2.md`). Created by the agent on its first turn (successors find it and read it instead). Fixed layout, every section present:
+
+```markdown
+# dev — worklog
+## Mission        the spawn brief, verbatim; playbook + mode; $AUTONOMY
+## Done           - [x] one line per finished milestone, with the hub file or commit it left behind
+## Doing          - [ ] the single step in progress, and what "finished" means for it
+## Next           - [ ] remaining steps, in order
+## Pointers       hub files + `file:line` facts this agent relies on — pointers, never bodies
+## Open threads   consults sent and awaiting an answer (to whom, what, since when); promises owed to others
+## Handoff        written at rotation only: what a successor must know that no other section or hub file holds
+## Generations    | gen | name | started | ended | reason | context tokens at end |
+```
+
+**When to update**: at every milestone — a document written, an agreement logged, a layer built and gated, a consult answered, a review section finished — **in the same message as the milestone's other tool calls**, never as a turn of its own. `Doing` must always be true: a successor reading it should know exactly where the predecessor stopped. Facts go to `facts.md`, decisions to the binding file, messages to `comms.md`; the worklog only points at them.
+
+### Budget and the coordinator's watch
+
+`session-stats.sh` reports, per agent, the **context size of the last turn** (`Context` column) and the turn count. Default budget: **120k context tokens or 60 turns**, whichever comes first (`GOGI_CONTEXT_BUDGET` / `GOGI_TURN_BUDGET` override). The **monitor** refreshes the table on every tick and reports a newly flagged agent to the coordinator (`rotate dev — …`); the coordinator rotates it at its next safe point. It is never rotated mid-edit (a half-applied change) or mid-review (a review is short; let it finish); the rotate message says so.
+
+### Rotation protocol (coordinator)
+
+1. **Rotate message** to the agent, logged `kind: status`: *"Budget reached. Finish the atomic step you are in (compiling tree, no half edits), update `Done/Doing/Next`, write `## Handoff`, append your `Generations` row, reply `handoff written` and stop."*
+2. **Wait for the agent's final message** (the monitor forwards its `handoff written` status). None within one watch window → one reminder; still none → `TaskStop`, and the successor starts from the worklog as it stands (that is why `Doing` must always be current).
+3. **Spawn the successor** with `name: <lineage>-<gen>` (`dev-2`, `investigator-2-2`) and a prompt that says only: *"You are `dev`, generation 2. Read `conventions.md`, then your worklog `$RUN/agents/dev.md` — it is your memory —, then only the hub files it points to. Continue from `Doing`/`Next`. Do not re-read what `Done` covers. Same `$RUN`, `$PREFS`, `$AUTONOMY`."* Never paste the old prompt or the old messages.
+4. **Re-address**: one message to every live role (logged, `to: all`): *"`dev` continues as `dev-2`; message that name."* Roles with an open consult to the old name re-send it to the new one.
+5. Record the rotation in the coordinator's own worklog (`agents/coordinator.md`, same layout, kept by the coordinator) so the final report can list generations.
+
+The successor appends a `Generations` row on start and writes `Done/Doing/Next` back as it goes, so the file is always restart-safe.
 
 ## Decisions: `[small]` vs `[big]`
 
-The PO tiers every behaviour/scope decision. **`[small]`** — localised, cheap to reverse, no auth/money/PII semantics (wording, ordering, a default matching precedent, a log field): decided now with a one-line rationale, logged, listed in the final report under *"Decisions made on your behalf — review"*. **`[big]`** — direction, scope change, contract shape (endpoint/DTO/DB column), auth/visibility, money/PII, discarding substantial finished work, ship-now-with-deviation vs wait: formulated with a recommendation and sent to the coordinator, who asks the user via `AskUserQuestion` **before anyone acts**. Unsure → `[big]`. **Only the coordinator talks to the user.**
+The PO tiers every behaviour/scope decision. **`[small]`** — localised, cheap to reverse, no auth/money/PII semantics (wording, ordering, a default matching precedent, a log field): decided now with a one-line rationale, logged, listed in the final report under *"Decisions made on your behalf — review"*. **`[big]`** — direction, scope change, contract shape (endpoint/DTO/DB column), auth/visibility, money/PII, discarding substantial finished work, ship-now-with-deviation vs wait: formulated with a recommendation and sent to the coordinator, who asks the user via `AskUserQuestion` **before anyone acts**. Unsure → `[big]`. **Only the coordinator talks to the user.** The coordinator relays; it never substitutes its own answer for the user's or the PO's.
 
 ### Autonomy level — how much the team may decide alone
 
@@ -31,13 +82,14 @@ Every run carries `$AUTONOMY` ∈ `low | high | full` (from `--autonomy`, a phra
 **Hard stops** (the only things `high` still asks about): discarding or reverting substantial finished work · anything that deletes or rewrites data (destructive migrations, backfills, resets) · auth / visibility / money / PII semantics · a contract change consumed by another team or service · a scope change that adds a new user-facing surface the request did not name.
 
 At every level: a decision the owner takes on the user's behalf is written into the binding file with its tier, the level it was decided under, and a one-line rationale, and appears in the final report under *"Decisions made on your behalf — review"* (grouped `[small]` / `[big]` / hard stops). Autonomy governs **decisions**, not **missing inputs**: a run that cannot proceed without something only the user holds (a repro, a log, a credential, which of two intents was meant) still asks — or stops and reports — at any level. `git push` / opening a PR never become allowed.
+
 **A ruling exists only in its binding file.** Decisions are *made by editing* the binding artifact (`agreement.md`, the memo, the brief) and *announced* with a pointer — `"memo §7 updated: per-stage line"` plus at most two lines. A ruling stated in a message but absent from the file is void; a reader who finds message and file disagreeing follows the file and says so. Never edit the file and describe a different state in a message. (Observed failure: memo and messages diverged → five reversals of one `[small]` decision in 25 minutes, zero code change.)
 
-**Reversal cap.** A decision may be reversed **once**, and only on a *new fact* (a citation, a measured cost, a rule) — never on re-weighing the same tradeoff. A second reversal on the same topic is not made by the owner: it goes to the coordinator, who closes the topic in `agreement.md` (either state is acceptable when both satisfy the ACs — the cost of churn exceeds the difference) and no role re-opens it. The coordinator watches `comms.md` for the same topic recurring and steps in at the second reversal without being asked.
+**Reversal cap.** A decision may be reversed **once**, and only on a *new fact* (a citation, a measured cost, a rule) — never on re-weighing the same tradeoff. A second reversal on the same topic is not made by the owner: it goes to the coordinator, who closes the topic in `agreement.md` (either state is acceptable when both satisfy the ACs — the cost of churn exceeds the difference; the coordinator picks the state the dev is currently building, without reading the arguments) and no role re-opens it. The coordinator watches `comms.md` for the same topic recurring and steps in at the second reversal without being asked.
 
 ## Direction documents: summary + appendix
 
-The PO brief and the techlead memo each open with **`## Summary` — at most 30 lines** — followed by numbered appendix sections (full SQL, file lists, test lists, template text). Other roles read the Summary by default and open an appendix section only when pointed at it (`memo §3`). The Summary is what the agreement is made on; an appendix section that contradicts the Summary is a bug in the document. Rulings that change a document update **both** the Summary line and the section, and mark the superseded text rather than deleting it.
+The PO brief and the techlead memo each open with **`## Summary` — at most 30 lines** — followed by numbered appendix sections (full SQL, file lists, test lists, template text). Other roles read the Summary by default and open an appendix section only when pointed at it (`memo §3`). The coordinator reads nothing below the Summary. The Summary is what the agreement is made on; an appendix section that contradicts the Summary is a bug in the document. Rulings that change a document update **both** the Summary line and the section, and mark the superseded text rather than deleting it.
 
 ## Agreement before code
 
@@ -45,7 +97,7 @@ Direction documents (PO brief, techlead memo) are proposals. The dev checks them
 
 ## Consults
 
-Blocking = stop and wait (anything architectural, any unanswered behaviour question). Non-blocking = state the default you proceed with. One consult, one decision: the answer is applied; disagree once with a reason, then follow it. Never guess a behaviour or contract — the PO decides or escalates.
+Blocking = stop and wait (anything architectural, any unanswered behaviour question). Non-blocking = state the default you proceed with. One consult, one decision: the answer is applied; disagree once with a reason, then follow it. Never guess a behaviour or contract — the PO decides or escalates. A consult you are waiting on goes in your worklog's `Open threads`.
 
 ## Git rules
 
@@ -55,7 +107,7 @@ Blocking = stop and wait (anything architectural, any unanswered behaviour quest
 
 ## Frozen-tree reviews
 
-No review starts until the dev confirms "stopped editing" and `git status --short` + `git diff --stat` are identical across one heartbeat tick. Reviewers record `git status --short` at start and re-check at end; a moved tree voids the review — stop, report, re-freeze, restart. The dev makes no edits while a review is running.
+No review starts until the dev confirms "stopped editing" and the monitor reports **frozen** (`git status --short` + `git diff --stat` identical across one tick, `watch.sh` mode `freeze`). During reviews the monitor runs in mode `review` and reports any tree movement. Reviewers record `git status --short` at start and re-check at end; a moved tree voids the review — stop, report, re-freeze, restart. The dev makes no edits while a review is running.
 
 ## Skill policy
 
@@ -68,7 +120,7 @@ The plugin is **self-contained**: every deliverable (reports, plans, `PR-PRE.md`
 `$PREFS = ~/.claude/projects/$(pwd | sed 's#[/.]#-#g')/memory/user-preferences.md` — a compact, project-scoped list of `When <scene> → do <action>` rules distilled from what the user has asked for, corrected, or decided before. It is part of Claude Code's per-project memory, so the main session already has it; **the coordinator and the PO read it at the start of every run** and pass `$PREFS` to every spawned role.
 
 - **Apply, don't re-ask.** A `[habit]` rule (seen ≥2× or stated as standing) is executed proactively and listed in the final report under *"applied from your preferences"*. A `[once]` rule is done with a note, or offered. A `[big]` question whose answer is already a recorded `[habit]` is **downgraded**: apply the habit, record it, don't ask. A `[small]` default is chosen to match recorded preferences first, repo precedent second.
-- **Harvest at the end of every run** (coordinator, before the final report): read `comms.md` for every `user →` entry and every `[big]` answer, plus any correction the user made mid-run, and turn each into a candidate rule — *the scene that triggered it, generalised one level* (not "add the missing index on orders.customer_id" but "when a comment names a known limit and its small upgrade, ship the upgrade"). Merge into `$PREFS`: an existing rule seen again → bump its count / promote `[once]` → `[habit]`; a contradiction → demote to `[once]` and flag it in the report for the user to settle; a new scene → new `[once]` line. Show the diff of `$PREFS` in the final report so the user can veto a wrong lesson.
+- **Harvest at the end of every run** (coordinator, before the final report): read `comms.md` for every `user →` entry and every `[big]` answer, plus any correction the user made mid-run, and turn each into a candidate rule — *the scene that triggered it, generalised one level* (not "add the missing index on orders.customer_id" but "when a comment names a known limit and its small upgrade, ship the upgrade"). Merge into `$PREFS`: an existing rule seen again → bump its count / promote `[once]` → `[habit]`; a contradiction → demote to `[once]` and flag it in the report for the user to settle; a new scene → new `[once]` line. Show the diff of `$PREFS` in the final report so the user can veto a wrong lesson. Harvest with one grep over `comms.md` (`grep -n '^### \[.*\] user →\|decision \[big\]'`), not by reading the whole log.
 - **Keep it usable**: under ~60 lines; one line per rule; merge duplicates; generalise two instances into one; drop `[once]` older than 60 days at harvest time. It is a rule list, not a diary — details belong in the run directory.
 - Never store secrets, credentials, or personal data about third parties in it.
 
@@ -76,47 +128,68 @@ The plugin is **self-contained**: every deliverable (reports, plans, `PR-PRE.md`
 
 One directory per run, inside the project, git-invisible: `docs/.local/gogi/{YYYY-MM-DD}-{intent}-{slug}/` (`git check-ignore docs/.local/` — if not ignored, add `docs/.local/` to `.git/info/exclude`, never to the tracked `.gitignore`). The coordinator creates it and passes the path (`$RUN`) to every agent. It exists so that **each file is read once by one agent and reused by all** — never let three roles cold-read the same twenty files.
 
+```
+$RUN/
+├── context.md            scout — request, ticket, governing docs + excerpts, file map, gate commands
+├── facts.md              every agent, append-only, cited
+├── agreement.md          coordinator — pointers to brief/memo, objections, agreed direction
+├── comms.md              every agent, via log.sh only
+├── session.md / .json    monitor's watch.sh on every tick; coordinator once at the end
+├── heartbeat.log         watch.sh, one line per tick (the verified heartbeat)
+├── agents/               one worklog per agent lineage (conventions § Context budget)
+│   ├── coordinator.md
+│   ├── scout.md
+│   ├── monitor.md
+│   ├── dev.md
+│   ├── techlead.md
+│   ├── po.md
+│   └── investigator-1.md …
+├── po-brief.md · techlead-memo.md · investigation.md · review-*.md · plan.md · PR-PRE.md
+└── .worktrees are NOT here — PR worktrees live at <project>/.worktrees/pr-<N>
+```
+
 | File | Written by | Purpose |
 |---|---|---|
-| `context.md` | coordinator, **before spawning** (one scout pass: `Explore`-style skim of the area) | request/ticket text, ACs, stack, branch, the repo docs that govern this area with their load-bearing excerpts, a file map of the touched area (`path — one line what it is`) |
+| `context.md` | **scout**, before any other role is spawned | request/ticket text, ACs, stack, branch, the repo docs that govern this area with their load-bearing excerpts, a file map of the touched area (`path — one line what it is`), the repo's gate commands |
 | `facts.md` | every agent, append-only | verified facts with `file:line` citations — `- [role HH:MM] user_settings.reminder_enabled exists, bool default false — migrations/0001_init.sql:42` |
-| `agreement.md` | coordinator | the PO brief, the techlead memo, objections, and the **current agreed direction** (updated on every re-agreement; a superseded section is marked, not deleted) |
+| `agreement.md` | coordinator | pointers to the PO brief and techlead memo, objections, and the **current agreed direction** (updated on every re-agreement; a superseded section is marked, not deleted) |
 | `comms.md` | every agent | the message log (below) |
-| `session.md` / `session.json` | coordinator, via script | session id, branch, Claude Code version, time window, and **per-agent + total token usage** (fresh input / cache write / cache read / output), turns, tool-call counts |
+| `agents/*.md` | each agent, own file | the worklog (above) |
+| `session.md` / `session.json` | `watch.sh` every tick; coordinator once at the end | session id, branch, Claude Code version, time window, **per-agent + total token usage**, last-turn context size, turns, tool-call counts, rotation flags |
+| `heartbeat.log` | `watch.sh` | one line per tick: time, mode, running token total, rotate flags, tree signature, comms length |
 | reports, plans, `PR-PRE.md` | the producing role | deliverables |
 
 **Ledger discipline.** Before opening a source file, check `facts.md` and `context.md`. A cited fact may be used without re-reading — **except** when it decides a blocker, a `[big]` question, or a ruling; then open the citation and confirm (a wrong ledger entry must not propagate into a decision). Append every fact you establish that another role could need; never append an uncited fact. Start your prep from `context.md`, not from a cold grep.
 
-**Pointers, not bodies.** When the content of a message already lives in a hub file (brief, memo, report, agreement), the message carries the pointer (`agreement.md § Memo`) plus a two-line summary — not the body. The hub holds the single verbatim copy; recipients read it once.
+**Pointers, not bodies.** When the content of a message already lives in a hub file (brief, memo, report, agreement), the message carries the pointer (`agreement.md § Memo`) plus a two-line summary — not the body. The hub holds the single verbatim copy; recipients read it once. An agent's final message to the coordinator follows the same rule: ≤15 lines plus paths.
 
 ## Comms log
 
-`$RUN/comms.md`. **Every agent logs every message it sends, verbatim, never summarised**, immediately before or after the SendMessage — **only** through the helper, never by hand:
+`$RUN/comms.md`. **Every agent logs every message it sends, verbatim, never summarised**, immediately before or after the SendMessage — **only** through the helper, never by hand — and in the **same turn** as the SendMessage:
 
 ```bash
 printf '%s\n' "<the full message>" | ${CLAUDE_PLUGIN_ROOT}/scripts/log.sh "$RUN" <sender> <recipient[,recipient]> "<kind>"
-# roles: coordinator | dev | techlead | po | investigator-N | user | all
+# roles: coordinator | scout | monitor | dev | techlead | po | investigator-N | user | all   (a generation suffix -N is accepted on any role)
 # kinds: brief | memo | consult | answer | "decision [small]" | "decision [big]" | question-relay | review | report | status
 ```
 
-The helper stamps the **current wall clock** itself and rejects unknown role names, so the log is chronological and the roster is consistent (no `team-lead`/`main`/`orchestrator` variants). Hand-written entries are a rule violation. This append is the **only write** a read-only role ever makes.
+The helper stamps the **current wall clock** itself and rejects unknown role names, so the log is chronological and the roster is consistent (no `team-lead`/`main`/`orchestrator` variants). Hand-written entries are a rule violation.
 
 ## Session stats
 
-Agents cannot see their own token usage, so the coordinator collects it from the transcripts on disk: `${CLAUDE_PLUGIN_ROOT}/scripts/session-stats.sh "$RUN"` reads the session's main transcript and every `subagents/agent-*.jsonl`, dedupes streaming duplicates by message id, and writes `$RUN/session.json` + `$RUN/session.md` (per-agent rows named after the `name:` given at spawn, plus totals). Run it **on every heartbeat tick** (live view, cheap — one jq pass) and **once more at the very end** before the final report; quote the totals line in the final report. Agent rows appear only after that agent has produced its first message.
+Agents cannot see their own token usage, so it is collected from the transcripts on disk: `${CLAUDE_PLUGIN_ROOT}/scripts/session-stats.sh "$RUN"` reads the session's main transcript and every `subagents/agent-*.jsonl`, dedupes streaming duplicates by message id, and writes `$RUN/session.json` + `$RUN/session.md` (per-agent rows named after the `name:` given at spawn, plus totals, plus the last-turn **Context** size and a `⚠ rotate` flag when an agent is over budget). The monitor's `watch.sh` runs it **on every tick**; the coordinator runs it **once more at the very end** before the final report and quotes the totals line. Agent rows appear only after that agent has produced its first message.
 
-## Heartbeat (mandatory, verified)
+## Heartbeat (mandatory, verified, owned by the monitor)
 
-The coordinator starts the timer **in the same message as the spawns** — `Bash("sleep 60", run_in_background: true)` — and restarts it on every tick until the run completes. Each tick: check `git status --short` + `git diff --stat` deltas and messages received, refresh `session.md`, and:
-- **something changed** → print a 1–3 line progress report to the user (what moved, consults/decisions since last tick, running token total);
-- **nothing changed** → print one line (`⏱ 12m — quiet; dev likely running gates`) — no analysis, no re-reading.
-Three quiet ticks → ask the dev for a one-line status. Never interrupt the dev otherwise. Also on each tick: scan new `comms.md` entries for a **reversal loop** (same topic decided twice) and arbitrate per the reversal cap.
+The coordinator spawns **`gogi:monitor`** (`name: monitor`) in the same message as the scout and never sleeps itself. The monitor waits inside `${CLAUDE_PLUGIN_ROOT}/scripts/watch.sh "$RUN"` — one Bash call (`run_in_background: true`, `timeout: 600000`) that ticks every 60 s for up to 9 minutes, refreshing `session.md` and appending to `heartbeat.log` on each tick, and returns early only when something is actionable: a new `⚠ rotate` flag, an urgent comms entry (`decision […]`, `report`, `status`), a **frozen** tree in mode `freeze`, a **moved** tree in mode `review`. Idle time costs no model turns for anyone.
 
-The heartbeat is **verified**: `session-stats.sh` counts the coordinator's `sleep` calls and prints `heartbeat ticks` in `session.md`; the final report quotes it. A run of N minutes with far fewer than N ticks means the protocol was skipped — say so in the report rather than hiding it. (Observed failure: a 60-minute run with 0 ticks; the user saw no progress at all.)
+On each wake the monitor sends the coordinator **at most one message of ≤3 lines** (event word first: `rotate`, `reversal`, `frozen`, `tree moved`, `report`, `big`, `digest`, `quiet`) and starts the next watch in the same turn. The coordinator wakes only on those messages and on roles' final reports, and on each wake does exactly what the event calls for: prints the digest/quiet line to the user (1–3 lines, no re-reading), runs the rotation protocol, closes a reversal loop, relays a `[big]`, starts or voids reviews. The coordinator sets the monitor's mode with a one-line message (`phase: build | freeze | review | done`), logged like any other. Two consecutive quiet windows → the monitor asks the dev for a one-line status; nobody else interrupts the dev.
+
+The heartbeat is **verified**: `session-stats.sh` counts the lines of `heartbeat.log` and prints `heartbeat ticks` in `session.md`; the final report quotes it. A run of N minutes with far fewer than N ticks means the monitor was not running — say so in the report rather than hiding it. (Observed failure: a 60-minute run with 0 ticks; the user saw no progress at all. Observed cost: a coordinator that ticked itself every minute re-sent ~100k tokens per tick.)
 
 ## Read-only roles' hard rules
 
-`techlead`, `po`, `investigator`: never edit, create, or delete project files; never run state-changing commands (no commit/push, installs, migrations, writes); read-only Bash only. Sole exception: the comms-log append. Never message the user — the channel is the coordinator (and teammates).
+`scout`, `monitor`, `techlead`, `po`, `investigator`: never edit, create, or delete project files; never run state-changing commands (no commit/push, installs, migrations, writes). Their only writes are **inside `$RUN`**: their own deliverable, `facts.md` appends, their worklog, the comms-log append via `log.sh`, and (monitor) what `watch.sh` writes. Never message the user — the channel is the coordinator (and teammates).
 
 ## After the reviews: follow-up changes
 
@@ -124,4 +197,4 @@ Any code change made **after** the frozen-tree reviews (a user follow-up, a merg
 
 ## Final report
 
-The coordinator ends every run with one message: the deliverable (inline or path), gates if code changed, consults and rulings, decisions made on the user's behalf (grouped by tier; hard stops decided under `full` first), **rules applied from `$PREFS` and the harvest diff (new / promoted / contradicted rules)**, open questions, the session totals line from `session.md` (input / output tokens, per-agent breakdown available in the file), the run directory `$RUN` (transcript in `comms.md`), and the single next step the user can say to continue — then stops.
+The coordinator ends every run with one message, assembled from the roles' final messages and the Summaries — not from re-reading the deliverables: the deliverable (path + its Summary), gates if code changed (as the dev reported them), consults and rulings, decisions made on the user's behalf (grouped by tier; hard stops decided under `full` first), **rules applied from `$PREFS` and the harvest diff (new / promoted / contradicted rules)**, open questions, the session totals line and heartbeat ticks from `session.md` (input / output tokens, per-agent breakdown and rotations available in the file), the run directory `$RUN` (transcript in `comms.md`, worklogs in `agents/`), and the single next step the user can say to continue — then stops.

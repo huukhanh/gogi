@@ -13,12 +13,12 @@ The request is already resolved and classified by the coordinator (task type: fe
 
 ## Step 2 — Knowledge hub + spawn
 
-Create `$RUN = docs/.local/gogi/{date}-{implement|fix-bug}-{slug}/` per conventions and **seed `context.md` first** — one scout pass (an `Explore` agent or your own skim): ticket text + ACs, governing repo docs with load-bearing excerpts, a file map. Then spawn the roles for the mode **in one message** (plus the heartbeat timer in that same message), each prompt carrying `$RUN`, stack, branch, task type, mode, `$PREFS`, `$AUTONOMY`, and the instruction to start from `context.md`, extend `facts.md`, and message with pointers into the hub.
+`$RUN` exists and the **scout has already seeded `context.md`** (ticket text + ACs, governing docs with load-bearing excerpts, gate commands, file map, precedent, tagged open questions) and `facts.md` — SKILL.md Step 0. You do not read the code yourself. Spawn the roles for the mode **in one message** (the monitor is already running from Step 0), each prompt carrying `$RUN`, stack, branch, task type, mode, `$PREFS`, `$AUTONOMY`, and the instruction to start from `context.md`, extend `facts.md`, keep `$RUN/agents/<name>.md`, and message with pointers into the hub.
 
 - **po** (full) — "Produce your behaviour brief (`$RUN/po-brief.md`, Summary ≤30 lines + appendix); send me a pointer; stay available for behaviour consults from dev and techlead."
 - **techlead** — "Produce your direction memo (`$RUN/techlead-memo.md`, Summary ≤30 lines + appendix; technical only — behaviour → po); send me a pointer; stay available for consults."
 - **dev** — "Prep-read from the hub; write no code until the brief and memo are agreed — check them against your prep and agree or object with reasons. Consult techlead (how) and po (what)."
-- **investigator** (light, first) — "Root-cause this symptom; report to `$RUN/investigation.md`." Hand the report to the dev.
+- **investigator** (light, first) — "Root-cause this symptom along the lane in `context.md § Hypothesis lanes`; report to `$RUN/investigation.md`." Hand the report's pointer to the dev.
 
 When the brief and memo arrive, write pointers + the key rulings into `$RUN/agreement.md` and point the dev and each other owner at it (never forward bodies). Any `[big]` question in the brief goes to the user **now**, before the agreement (at `high`/`full` the PO has already decided it in the brief — verify each is tagged with its tier and level; only hard stops at `high` still go to the user); record answers in `agreement.md`. Once agreed, write the *Agreed direction* section — that is what "done" names.
 
@@ -27,12 +27,13 @@ When the brief and memo arrive, write pointers + the key rulings into `$RUN/agre
 - **No code before the logged agreement** (dev agrees to both documents; po and techlead cross-check each other's). Objections loop back to the owner. "Done" must name the agreement.
 - **Build bottom-up in dependency order** — contract/schema → domain → application → infra → adapter/UI → wiring → tests — so each layer compiles against a finished one below it and the gates can run early on the lower layers.
 - **Direction change** → dev stops editing; owners re-agree; PO tiers; `[big]` → **snapshot first** (WIP commit per conventions), then `AskUserQuestion` with the PO's recommendation — or, at `high`/`full`, the PO's own decision per the autonomy table; you ratify and relay.
-- Stay out of consults unless the PO escalates a `[big]` — **or a decision reverses twice**. On each heartbeat tick scan new `comms.md` entries; the same topic ruled a second time is your cue: close it in `agreement.md` (both states acceptable → pick the one the dev is currently building), tell all roles it is closed, forbid re-opening. Don't wait to be asked.
+- Stay out of consults unless the PO escalates a `[big]` — **or a decision reverses twice**. The monitor reads every new `comms.md` entry and reports `reversal — <topic>` with both citations; that is your cue: close it in `agreement.md` (both states acceptable → pick the one the dev is currently building — you do not weigh the arguments), tell all roles it is closed, forbid re-opening. Don't wait to be asked.
+- **Rotate on budget.** The monitor reports `rotate <agent>` when `session.md` flags one; run the rotation protocol (conventions § Context budget). The dev is the usual candidate on long builds — rotate it between layers, never mid-edit; a successor `dev-2` resumes from `agents/dev.md`. Re-address the other roles in the same message.
 
 ## Step 4 — Done → freeze → reviews
 
-1. Check the dev's report: gates listed with verbatim results (spot-check if vague); bug task → red-then-green evidence present.
-2. **Freeze the tree** per conventions.
+1. Check the dev's report: gates listed with results (if vague, ask the dev to re-run and quote — never run or read them yourself); bug task → red-then-green evidence present.
+2. **Freeze the tree** per conventions: tell the monitor `phase: freeze`; it reports `frozen` after one unchanged tick. Then `phase: review`.
 3. **Parallel reviews on the frozen tree**: techlead — technical + impact range → `$RUN/review-techlead.md`; po (if present) — acceptance against the brief and logged decisions → `$RUN/review-po.md`. Blockers → dev fixes → re-freeze → re-review only the fix; max 3 rounds, then stop and report. Suggestions/notes → final report.
 4. `git reset --soft` any WIP snapshots. Tell all roles the run is complete — but keep `techlead` addressable: any code change after this point (user follow-up, merge from the default branch, migration renumber) gets a **targeted techlead re-check of the delta** before it is reported, or is recorded as *user-accepted, unreviewed*. Re-run `session-stats.sh` after every follow-up.
 

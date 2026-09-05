@@ -2,7 +2,7 @@
 
 *Gōgi* (合議): a decision reached by a council deliberating together, not by one person alone.
 
-A Claude Code plugin (+ its marketplace) that turns any engineering request into a small, role-based team run: a coordinator, a dev, a tech lead, a PO/BA (the client's proxy) and investigators agree on the direction before anyone writes code, and every decision made on your behalf is tiered, logged and reported.
+A Claude Code plugin (+ its marketplace) that turns any engineering request into a small, role-based team run: a coordinator that only coordinates, a cheap scout that reads first, a monitor that watches the clock so the coordinator never does, a dev, a tech lead, a PO/BA (the client's proxy) and investigators agree on the direction before anyone writes code, and every decision made on your behalf is tiered, logged and reported. Every agent keeps a worklog and is rotated onto a fresh context when it outgrows its budget, so long runs do not pay for bloated contexts.
 
 ## Install
 
@@ -44,6 +44,7 @@ Restart or `/reload-plugins` after updating so the new agent definitions are loa
 
 ## Changelog
 
+- **1.2.0** — the coordinator is now a pure coordinator: it never reads code, scouts, reviews or rules on content (it runs on the most expensive model). A new `gogi:scout` agent (Sonnet) goes first: fetches the ticket/PR, seeds `context.md` + `facts.md` (governing docs, gate commands, file map, precedent), drafts hypothesis lanes for investigations, and answers *explain* requests. Every agent keeps a worklog at `$RUN/agents/<name>.md` (Mission / Done / Doing / Next / Pointers / Open threads / Handoff / Generations); `session-stats.sh` reports each agent's last-turn context size and flags agents over budget (default 120k tokens or 60 turns, `GOGI_CONTEXT_BUDGET` / `GOGI_TURN_BUDGET`), and the coordinator rotates them onto a successor (`dev-2`) that resumes from the worklog. A new `gogi:monitor` agent (Sonnet) owns the heartbeat: it waits inside `watch.sh` (one Bash call, up to 9 minutes of one-minute ticks that refresh the stats and write `heartbeat.log`) and returns early only on something actionable, then wakes the coordinator with at most three lines (`rotate`, `reversal`, `frozen`, `tree moved`, `report`, `big`, `digest`, `quiet`). The coordinator no longer sleeps or reads the comms log; idle time costs no turns. Turn discipline (batch independent tool calls into one message) now binds every role. `code-comments.md` is reduced to two checks: can the code explain itself, and would deleting the comment make a wrong edit more likely; reviewers flag comments that fail.
 - **1.1.0** — the `pm` role is replaced by `po` (PO / BA): one agent that analyses the ticket and then decides as the client's proxy, within the autonomy level. `gogi:pm` no longer exists; the run artifacts are `po-brief.md` and `review-po.md`. The `dev` agent now runs on Sonnet at `xhigh` effort.
 - **1.0.0** — first release.
 
@@ -56,7 +57,9 @@ Restart or `/reload-plugins` after updating so the new agent definitions are loa
 ```
 
 Intents: implement · fix-bug · investigate · review-code · review-pr · pr-comments · breakdown · explain.
-Roles (agents): `gogi:dev` (only one that edits code), `gogi:techlead` (how), `gogi:po` (what — PO/BA, the client's proxy: analyses, then decides), `gogi:investigator` (why).
+Roles (agents): `gogi:scout` (reads first — Sonnet; seeds the hub, answers *explain*), `gogi:monitor` (the heartbeat — Sonnet; wakes the coordinator only with actionable events), `gogi:dev` (only one that edits code), `gogi:techlead` (how), `gogi:po` (what — PO/BA, the client's proxy: analyses, then decides), `gogi:investigator` (why). The coordinator itself never reads code or decides content.
+
+**Context budget.** Every agent keeps `$RUN/agents/<name>.md` (what it did, is doing, will do, plus pointers into the hub). On each tick the monitor's `watch.sh` refreshes `session.md`; an agent whose last-turn context exceeds `GOGI_CONTEXT_BUDGET` (default 120000) or whose turns exceed `GOGI_TURN_BUDGET` (default 60) is reported to the coordinator, told to finish its atomic step, write a handoff and stop, and a successor (`dev-2`, …) is spawned that resumes from the worklog. Nothing is lost: facts live in `facts.md`, rulings in the binding files, messages in `comms.md`, and the worklog points at all of them.
 
 **Autonomy** (`--autonomy`, default `low`) sets how much the team may decide without you. Every decision is tiered the same way at every level; the level only changes who answers:
 
@@ -71,7 +74,7 @@ Missing inputs (a repro, a log, which of two intents you meant) are still asked 
 ## What a run leaves behind
 
 `docs/.local/gogi/<date>-<intent>-<slug>/` in the project (git-ignored; the plugin adds `docs/.local/` to `.git/info/exclude` if needed):
-`context.md` (scout pass) · `facts.md` (cited ledger) · `agreement.md` · `comms.md` (verbatim transcript) · `session.md`/`.json` (per-agent token usage) · reports / `PR-PRE.md`.
+`context.md` (the scout's pass) · `facts.md` (cited ledger) · `agreement.md` · `comms.md` (verbatim transcript) · `agents/*.md` (one worklog per agent, with generations) · `heartbeat.log` (one line per monitor tick) · `session.md`/`.json` (per-agent token usage, last-turn context, rotate flags, heartbeat ticks) · reports / `PR-PRE.md`.
 
 Code changes are left **uncommitted** for review. The plugin never pushes or opens a PR.
 

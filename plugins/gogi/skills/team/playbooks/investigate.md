@@ -2,9 +2,9 @@
 
 Used by `investigator` agents (method + report) and by the coordinator (intake flags, adjudication). `conventions.md` binds everything here.
 
-## Intake (coordinator)
+## Intake (scout, on the coordinator's behalf)
 
-The request may carry hints; parse them and pass them to every investigator:
+The request may carry hints; the **scout** parses them into `context.md § Request` and drafts the `## Hypothesis lanes` (2–3, one line each: family · starting file · falsifying observation) the coordinator spawns investigators on. The coordinator never reads the entry points itself.
 
 | Flag / phrase | Meaning | How it is treated |
 |---|---|---|
@@ -14,7 +14,7 @@ The request may carry hints; parse them and pass them to every investigator:
 | `--scope <paths>` | narrow the area | restrict greps/reads there first; expand only if the trail leads out |
 | `--since <ref/date>` | recency window | bound `git log` to it (default: last 30 days / 50 commits) |
 
-Too vague to frame ("it's broken") → one `AskUserQuestion` for the missing observable, before spawning anyone.
+Too vague to frame ("it's broken") → the scout tags a `[user]` question; the coordinator asks it with one `AskUserQuestion` before spawning any investigator.
 
 ## Method (investigator)
 

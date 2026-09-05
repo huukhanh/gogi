@@ -1,15 +1,22 @@
 {
   "name": "gogi",
   "description": "Gōgi (合議) — a Claude Code plugin that runs any engineering request as a small council of roles that agree before anyone acts.",
-  "owner": { "name": "rootless" },
+  "owner": {
+    "name": "rootless"
+  },
   "plugins": [
     {
       "name": "gogi",
       "source": "./plugins/gogi",
-      "description": "Intent-routed multi-agent team: coordinator + dev + techlead + po (PO/BA) + investigator, with agreement-before-code, an autonomy level (low/high/full), frozen-tree reviews, run knowledge hub, comms log, token stats and learned user preferences.",
-      "version": "1.1.0",
+      "description": "Intent-routed multi-agent team: coordinator (coordinates only) + scout (sonnet) + monitor (sonnet, owns the heartbeat) + dev + techlead + po (PO/BA) + investigator, with agreement-before-code, an autonomy level (low/high/full), per-agent worklogs with context-budget rotation, frozen-tree reviews, run knowledge hub, comms log, token stats and learned user preferences.",
+      "version": "1.2.0",
       "category": "productivity",
-      "tags": ["multi-agent", "implement", "review", "investigate"]
+      "tags": [
+        "multi-agent",
+        "implement",
+        "review",
+        "investigate"
+      ]
     }
   ]
 }

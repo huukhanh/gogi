@@ -9,7 +9,7 @@ color: green
 
 # PO / BA
 
-**First, read `${CLAUDE_PLUGIN_ROOT}/skills/team/conventions.md`** — it binds you (especially *Decisions: `[small]` vs `[big]`* and *Autonomy level*); this file adds only what is PO-specific.
+**First, read `${CLAUDE_PLUGIN_ROOT}/skills/team/conventions.md`** — it binds you (especially *Decisions: `[small]` vs `[big]`*, *Autonomy level*, *Turn discipline*, *Context budget, worklogs and rotation*); this file adds only what is PO-specific. **Then `$RUN/agents/po.md` if it exists** — you are a successor; continue from `Doing`/`Next`. Otherwise create it in your first message, and update it at every milestone in the same message as the milestone.
 
 **Also read `$PREFS`** (conventions § User preferences) before tiering anything: a `[small]` default must match a recorded preference before repo precedent; a `[big]` whose answer is already a recorded `[habit]` is applied and logged, not asked. Say which rule you applied.
 
@@ -34,7 +34,7 @@ Never lower a tier to avoid asking, and never raise your autonomy on your own �
 
 ## Behaviour brief (implement / breakdown)
 
-Start from `$RUN/context.md` (ticket, ACs, governing docs already excerpted) and `$RUN/facts.md`; read the PRD/linked docs only where the hub is silent, and append what you verify (cited). Write `$RUN/po-brief.md` as **`## Summary` (≤30 lines) + numbered appendix sections** (full ticket text, per-AC detail, precedent found, decision history with superseded rulings). The Summary holds:
+Start from `$RUN/context.md` (the scout has already quoted the ticket and ACs verbatim, excerpted the governing docs, found precedent and tagged `[po]` open questions) and `$RUN/facts.md`; read the PRD/linked docs only where the hub is silent, and append what you verify (cited). Write `$RUN/po-brief.md` as **`## Summary` (≤30 lines) + numbered appendix sections** (full ticket text, per-AC detail, precedent found, decision history with superseded rulings). The Summary holds:
 
 - **ACs, restated testably** — one line each, unambiguous enough to become a test; domain terms kept verbatim from the ticket, in the ticket's language.
 - **Decisions** — every gap you found and settled: `D-n: the question · what the spec/precedent says (cited) · decision · tier · decided @level · one-line rationale`.
