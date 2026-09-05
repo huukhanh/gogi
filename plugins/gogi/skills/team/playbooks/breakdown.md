@@ -14,11 +14,11 @@ Start from `context.md` (the scout's file map, precedent and governing docs); re
 - **Explore 2–3 approaches, lead with the recommendation**:
   - Recommended — why it fits *now* (risk, effort, compatibility with what exists)
   - Alternative A — tradeoffs · Alternative B — tradeoffs
-  Ground each in a concrete file/pattern that already exists; "reuse X" beats "build Y".
+  Ground each in a concrete file/pattern that already exists; "reuse X" beats "build Y". Rank by `least-code.md`'s stop order: an approach that needs no new layer or dependency outranks one that does unless an AC forces it; name, per approach, what it adds (files, abstractions, dependencies) and the question each cleared.
 - **Cover, for the recommended approach**: data model (domain + DB, migrations) · API surface (paths, methods, request/response shapes, back-compat) · validation, errors and their HTTP mapping · authz · observability (logs, metrics, counters) · testing plan (unit / integration / what proves each AC) · rollout & backward compatibility (deploy order, flags, data backfill).
 - **Verify placement** of every new package/port against the repo's dependency checker and an existing sibling before writing it down.
 - **When a contract changes for another team** (FE, another service, infra), add a *Collaboration needed* block: what changes, who is impacted, what input is needed — in the plan, not as a fait accompli.
-- YAGNI: strike anything not required by an AC.
+- Strike anything not required by an AC (`least-code.md` question 1); list it under *Not built* with its "add when" so the plan shows what was deliberately left out. Under `$LEAN strict` the smallest task set that satisfies the ACs is the plan; everything else is a `[big]` question.
 
 ## 3. Reconcile
 
@@ -47,6 +47,7 @@ Prefer tasks that ship independently; a task that cannot be verified alone is tw
 ## Goal & context          — one paragraph; links to ticket/docs in context.md
 ## Acceptance criteria     — A1… (testable; domain terms from the ticket kept verbatim, in the ticket's language)
 ## Decisions               — [small] made (rationale) · [big] asked → answer
+## Not built               — item · covered by · add when   (least-code.md; $LEAN level used)
 ## Approach                — recommended vs alternatives, tradeoffs
 ## Design                  — data model · API · validation/errors · authz · observability · rollout/back-compat
 ## Tasks                   — TASK-1…n as above, dependency order

@@ -1,8 +1,8 @@
 {
   "name": "gogi",
   "displayName": "Gōgi (合議) — coordinator, scout, monitor, dev, techlead, PO/BA, investigator",
-  "description": "Delegates any engineering request to the right roles: a coordinator classifies intent (implement, fix-bug, investigate, review-code, review-pr, pr-comments, breakdown, explain) and runs that playbook with only the agents it needs. The coordinator only coordinates; a cheap scout seeds the run's knowledge hub first; a monitor owns the heartbeat and wakes the coordinator only with actionable events; every agent keeps a worklog and is rotated when its context outgrows a budget. Agreement before code, an autonomy level (low | high | full), frozen-tree reviews, per-run knowledge hub + comms log + token stats, learned user preferences. Never pushes or opens a PR.",
-  "version": "1.2.0",
+  "description": "Delegates any engineering request to the right roles: a coordinator classifies intent (implement, fix-bug, investigate, review-code, review-pr, pr-comments, breakdown, explain) and runs that playbook with only the agents it needs. The coordinator only coordinates; a cheap scout seeds the run's knowledge hub first; a monitor owns the heartbeat and wakes the coordinator only with actionable events; every agent keeps a worklog and is rotated when its context outgrows a budget. Least code that works (a stop order every role walks before adding anything, a --lean level, an over-build review pass and a slim intent), agreement before code, an autonomy level (low | high | full), frozen-tree reviews, per-run knowledge hub + comms log + token stats, learned user preferences. Never pushes or opens a PR.",
+  "version": "1.3.0",
   "author": {
     "name": "rootless"
   },
@@ -13,6 +13,8 @@
     "implement",
     "review",
     "investigate",
-    "planning"
+    "planning",
+    "yagni",
+    "minimal"
   ]
 }

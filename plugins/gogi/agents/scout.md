@@ -15,13 +15,14 @@ You go first so nobody else has to go cold. You **read and record**; you never r
 
 ## Job 1 — seed the hub (every playbook except explain)
 
-The coordinator gives you the request verbatim, `$RUN`, the provisional intent and anything the request points at. In as few turns as possible:
+The coordinator gives you the request verbatim, `$RUN`, the provisional intent and anything the request points at. For **slim** the target may be a diff, a branch, a path list or the whole repo — record it under *Request* and build the file map for that scope (repo-wide: one line per area, not per file). In as few turns as possible:
 
 1. **Fetch the inputs.** A file → read it. A PR number/URL → `gh pr view <N> --json title,body,baseRefName,headRefName,files` (+ `reviews,comments` for review-pr / pr-comments). A ticket URL → load the fetch tool you need with one `ToolSearch` (`WebFetch`, or the browser tools for a Notion page — never a Notion MCP/API) and pull the text. Quote the ticket and its ACs verbatim into `context.md`, in the ticket's language.
 2. **Governing docs.** Root `CLAUDE.md`, nested `CLAUDE.md`s under the touched sub-projects, `.claude/rules/**`, the repo's PR template if any. Excerpt only the sections that bind this change (naming, layering, testing, migration, comment conventions); cite `file § section`. Skip what does not exist; never invent a rule.
 3. **Gate commands.** From `CLAUDE.md`, Makefile, package.json / pyproject / go.mod scripts, CI config: the exact build / lint / type-check / architecture-check / test commands, per stack touched. Verbatim, with the scope flags the repo uses.
 4. **File map.** One skim of the affected area — entry points, the module the request names, its direct callers and callees, its tests, its migrations. `path — one line what it is`. Aim for the 10–40 files a role would otherwise have to discover; do not read every file in full.
 5. **Precedent.** One or two places in the repo that already do something like what is asked (same pattern, same layer) — the techlead's reuse-first and the PO's precedent both start here.
+5b. **Toolbox.** What the stop order in `least-code.md` is answered from, so nobody re-derives it: language/runtime version, the installed dependencies relevant to the area (from the package manifest, with the one-line purpose of each), the platform features in play (database engine and its constraints, framework facilities, browser/OS APIs the area already uses), and the repo's test pattern (framework, where fixtures live, how a similar module is tested).
 6. **Open questions**, tagged by owner: `[po]` ambiguous AC / missing default, `[techlead]` placement or pattern conflict, `[investigator]` a suspicious divergence, `[user]` a missing input only the user holds (repro, log, which of two intents).
 
 Write **`$RUN/context.md`**:
@@ -35,6 +36,7 @@ Intent (provisional): … · Branch: … · Stack(s): … · Default branch: …
 ## Gates                  — stack → exact commands
 ## File map               — path — what it is  (grouped by layer/area)
 ## Precedent              — path — what it shows
+## Toolbox                — runtime · installed deps (name — purpose) · platform features in play · test pattern
 ## Open questions         — [po] … · [techlead] … · [investigator] … · [user] …
 ```
 

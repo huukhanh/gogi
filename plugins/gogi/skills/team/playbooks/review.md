@@ -24,6 +24,8 @@ Used by `techlead` for every technical review (implement's frozen-tree review, r
 
 **F. Reuse / duplication** — new code vs existing helpers, utils, patterns across the repo; duplicated logic with behavioural divergence is a finding.
 
+**H. Over-build (`least-code.md`)** — a separate pass from A–G: for every added function, type, file, layer, dependency, config value and fixture, which stop-order question should have stopped it? One tagged line each — `drop:` (no AC needs it) · `have:` (a repo helper already does it) · `std:` (standard library) · `platform:` (DB/browser/framework/OS does it natively) · `installed:` (an existing dependency does it) · `fold:` (same logic, fewer lines — show the shorter form) — ranked biggest cut first, ending in `Removable: ~N lines · M files · K dependencies` or `Nothing to cut.` Important by default; Critical when a new dependency or a new layer was added for what already existed. Never flag the single check that guards the logic, and never flag what `least-code.md` protects.
+
 **G. Doc / spec gap analysis (when a ticket, AC list, or `--docs` exists — the PO owns this in team runs)** — two-way: every requirement → traceable to code *and* a test (missing = finding); every meaningful change → covered by the doc (undocumented = scope creep / silent contract change); mismatches quoted both sides. No docs → one line saying it was skipped and which doc would have helped.
 
 ## Severity
@@ -34,7 +36,7 @@ Used by `techlead` for every technical review (implement's frozen-tree review, r
 | **Important** | works but deviates from convention, untested non-trivial logic, real unhandled edge case, quiet contract change — fix before merge |
 | **Suggestion** | preference, micro-improvement, future-proofing — author may decline without justification |
 
-## Report (`$RUN/review-techlead.md`, `review-po.md`, `review.md`, or `review-pr.md`)
+## Report (`$RUN/review-techlead.md`, `review-po.md`, `review.md`, `review-pr.md` — or `slim.md`, which holds only the *Over-build* section, the scope line and *Files reviewed*)
 
 ```markdown
 # Review: {target}   — **Overall**: PASS | NEEDS FIXES | BLOCKED
@@ -46,6 +48,8 @@ Frozen tree: git status at start == at end ✔
 ## Suggestions         `file:line` — one line each
 ## Edge cases considered   | area/file | cases reasoned through | verdict |     ← makes coverage visible even when nothing is wrong
 ## Impact range        | changed symbol | consumers checked (file:line) | result |
+## Over-build          <file>:<line>  drop: | have: | std: | platform: | installed: | fold:  … → `Removable: ~N lines · M files · K dependencies` — or "Nothing to cut."
+## Not built (from the memo/agreement) — honoured? | item | add when | status |
 ## Doc / spec gap      Doc→Code missing · Code→Doc undocumented · Mismatches (doc says / code does)   — or "skipped: no docs"
 ## Consistency         cross-file drift (naming, error mapping) — or "none"
 ## Done well           concrete, cited

@@ -65,6 +65,10 @@ One file per agent lineage, named after the spawn name without generation suffix
 
 The successor appends a `Generations` row on start and writes `Done/Doing/Next` back as it goes, so the file is always restart-safe.
 
+## Least code that works
+
+**`${CLAUDE_PLUGIN_ROOT}/skills/team/least-code.md` binds every role.** Before anything is added — a function, a type, a file, a layer, a dependency, a fixture — walk its stop order and stop at the first question that holds: not needed now → already in this repo → standard library → platform feature → installed dependency → one line → only then the least code, in the fewest files. Nothing unrequested is abstracted, configured or wrapped; nothing protective is cut (trust-boundary validation, data-loss handling, security, accessibility, what the user asked for). Understanding comes first: the rule shortens the solution, never the reading. Every run carries **`$LEAN`** ∈ `lite | full | strict` (default `full`; resolved like `$AUTONOMY` and passed to every role) — it sets how hard the *is this needed?* question is pushed against the request itself. The techlead memo names the question each new thing cleared; the techlead review has a dedicated over-build pass (checklist H, `Removable: ~N lines`); the final report lists what was **not built** and when to add it, plus every deliberate ceiling.
+
 ## Decisions: `[small]` vs `[big]`
 
 The PO tiers every behaviour/scope decision. **`[small]`** — localised, cheap to reverse, no auth/money/PII semantics (wording, ordering, a default matching precedent, a log field): decided now with a one-line rationale, logged, listed in the final report under *"Decisions made on your behalf — review"*. **`[big]`** — direction, scope change, contract shape (endpoint/DTO/DB column), auth/visibility, money/PII, discarding substantial finished work, ship-now-with-deviation vs wait: formulated with a recommendation and sent to the coordinator, who asks the user via `AskUserQuestion` **before anyone acts**. Unsure → `[big]`. **Only the coordinator talks to the user.** The coordinator relays; it never substitutes its own answer for the user's or the PO's.
@@ -78,6 +82,8 @@ Every run carries `$AUTONOMY` ∈ `low | high | full` (from `--autonomy`, a phra
 | **low** (default) | PO decides, logs | user is asked before anyone acts | user is asked |
 | **high** | PO decides, logs | **PO decides** — applies its own recommendation, logs it tagged `[big → decided @high]` | user is asked |
 | **full** | PO decides, logs | PO decides, logs | **PO decides the safest reversible option**, logs it tagged `[hard-stop → decided @full]`, and the final report opens with these |
+
+A cut of *requested* scope is a decision too: when a smaller thing plainly covers the AC it is `[small]` (built small, logged as *not built*); when the user might reasonably want the larger thing it is `[big]` with the recommendation. Under `$LEAN strict` the PO raises these itself; under `lite` they are only reported.
 
 **Hard stops** (the only things `high` still asks about): discarding or reverting substantial finished work · anything that deletes or rewrites data (destructive migrations, backfills, resets) · auth / visibility / money / PII semantics · a contract change consumed by another team or service · a scope change that adds a new user-facing surface the request did not name.
 
@@ -150,7 +156,7 @@ $RUN/
 
 | File | Written by | Purpose |
 |---|---|---|
-| `context.md` | **scout**, before any other role is spawned | request/ticket text, ACs, stack, branch, the repo docs that govern this area with their load-bearing excerpts, a file map of the touched area (`path — one line what it is`), the repo's gate commands |
+| `context.md` | **scout**, before any other role is spawned | request/ticket text, ACs, stack, branch, the repo docs that govern this area with their load-bearing excerpts, a file map of the touched area (`path — one line what it is`), the repo's gate commands, the **toolbox** (language version, installed dependencies and platform features relevant to the area — what the stop order's questions 2–5 are answered from) |
 | `facts.md` | every agent, append-only | verified facts with `file:line` citations — `- [role HH:MM] user_settings.reminder_enabled exists, bool default false — migrations/0001_init.sql:42` |
 | `agreement.md` | coordinator | pointers to the PO brief and techlead memo, objections, and the **current agreed direction** (updated on every re-agreement; a superseded section is marked, not deleted) |
 | `comms.md` | every agent | the message log (below) |
@@ -197,4 +203,4 @@ Any code change made **after** the frozen-tree reviews (a user follow-up, a merg
 
 ## Final report
 
-The coordinator ends every run with one message, assembled from the roles' final messages and the Summaries — not from re-reading the deliverables: the deliverable (path + its Summary), gates if code changed (as the dev reported them), consults and rulings, decisions made on the user's behalf (grouped by tier; hard stops decided under `full` first), **rules applied from `$PREFS` and the harvest diff (new / promoted / contradicted rules)**, open questions, the session totals line and heartbeat ticks from `session.md` (input / output tokens, per-agent breakdown and rotations available in the file), the run directory `$RUN` (transcript in `comms.md`, worklogs in `agents/`), and the single next step the user can say to continue — then stops.
+The coordinator ends every run with one message, assembled from the roles' final messages and the Summaries — not from re-reading the deliverables: the deliverable (path + its Summary), gates if code changed (as the dev reported them), consults and rulings, decisions made on the user's behalf (grouped by tier; hard stops decided under `full` first), **what was not built and when to add it** plus every deliberate ceiling (least-code.md), the `$LEAN` level used, **rules applied from `$PREFS` and the harvest diff (new / promoted / contradicted rules)**, open questions, the session totals line and heartbeat ticks from `session.md` (input / output tokens, per-agent breakdown and rotations available in the file), the run directory `$RUN` (transcript in `comms.md`, worklogs in `agents/`), and the single next step the user can say to continue — then stops.

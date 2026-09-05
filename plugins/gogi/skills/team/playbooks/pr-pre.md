@@ -26,8 +26,9 @@ Copy-paste-ready PR materials for an **uncommitted** working tree. Fill every se
 - Tests added: <list; for bug fixes, the red-then-green regression test>
 - Manual / smoke: <what was exercised, against what data>
 
-## Not included / follow-ups
-- <known gaps, deferred items, provisional decisions, infra tickets>
+## Not built / follow-ups
+<!-- from agreement.md's not-built list: each requested-or-tempting thing left out, what covers it today, when to add it; plus known gaps, provisional decisions, infra tickets, and every deliberate ceiling marked in the code -->
+- <item — covered by … — add when …>
 
 ## Suggested commit messages
 <!-- conventional commits, one per logical unit; no task-id suffixes, no co-author trailers; if existing commits are already well-structured, reuse them -->
