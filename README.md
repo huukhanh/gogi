@@ -2,131 +2,125 @@
 
 *Gōgi* (合議): a decision reached by a council deliberating together, not by one person alone.
 
-A Claude Code plugin (+ its marketplace) that turns any engineering request into a small, role-based team run: a coordinator that only coordinates, a cheap scout that reads first, a monitor that watches the clock so the coordinator never does, a dev, a tech lead, a PO/BA (the client's proxy) and investigators agree on the direction before anyone writes code, and every decision made on your behalf is tiered, logged and reported. Every agent keeps a worklog and is rotated onto a fresh context when it outgrows its budget, so long runs do not pay for bloated contexts.
+A Claude Code plugin that runs any engineering request as a small team of agents with fixed roles. A scout reads first, a PO and a tech lead agree on the direction, one dev writes the code, reviewers check a frozen tree, and a coordinator that never reads code ties it together. Every decision made on your behalf is tiered, logged and reported. Small tasks skip the council; large ones get broken down first. Nothing is pushed; the diff is left for your review.
 
 ## Install
 
 ```bash
-# try it on one project, no install
-claude --plugin-dir /path/to/gogi/plugins/gogi
+# from GitHub
+/plugin marketplace add huukhanh/gogi
+/plugin install gogi@gogi
 
-# install for good (local marketplace)
+# from a local clone
 /plugin marketplace add /path/to/gogi
 /plugin install gogi@gogi
 
-# or from GitHub once pushed
-/plugin marketplace add huukhanh/gogi
-/plugin install gogi@gogi
+# try on one project without installing
+claude --plugin-dir /path/to/gogi/plugins/gogi
 ```
 
 Enable per project in `.claude/settings.json` (`enabledPlugins`) or globally in `~/.claude/settings.json`.
 
-## Upgrade
-
-Versions are tracked in `plugins/gogi/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (both bumped together).
-
-```bash
-# installed from the GitHub marketplace
-/plugin marketplace update gogi          # re-fetch the catalog so it sees the new version
-/plugin update gogi@gogi                 # install it (or leave auto-update on under /plugin → Marketplaces)
-
-# installed from a local clone
-git -C /path/to/gogi pull                # get the new version
-/plugin marketplace update gogi
-/plugin update gogi@gogi
-
-# loaded with --plugin-dir
-git -C /path/to/gogi pull
-/reload-plugins                          # picks up the new files in the running session
-```
-
-Restart or `/reload-plugins` after updating so the new agent definitions are loaded. See the changelog below for renames that affect how you address roles.
-
-## Changelog
-
-- **1.4.1** — the run never appears in code: comments, test names and suggested commit messages may not mention a role, brief, memo, agreement, decision id, tier, level or run path (`code-comments.md`); `Provisional:` and ceiling comments state the assumption or limit only. Reviewers and the quick check treat a violation as a finding.
-- **1.4.0** — **weight**: every implement / fix-bug run is sized `quick | standard | heavy` (`--weight`, else from the request, confirmed by the scout with evidence: file count, consumer grep, contract touch). *Quick* (a label, a constant, a config value, a one-liner with a known cause: ≤3 files, no external consumers, no contract/schema/auth/money/PII, no open behaviour question) runs scout → dev → scout check on Sonnet only, no monitor, no brief/memo/agreement, gates limited to what the touched files trigger, and ends with a diff plus a commit message. *Quick* has its own playbook (`playbooks/quick.md`). *Standard* is the existing playbooks. *Heavy* (shared code with consumers in several packages, schema/contract, several stacks, migrations) runs breakdown first, then each task as a full implement with the dev on Opus and full-suite gates. Any role that sees a criterion break says `re-weigh` and the coordinator moves the run up.
-- **1.3.1** — rotation budget is now **300k last-turn context tokens** per agent (`GOGI_CONTEXT_BUDGET`, was 120k); the turn-count budget is removed — turns are still reported, never a trigger. `session.md` rows are named from the spawn name (via the transcript's `.meta.json`), every spawned agent keeps its row for the whole session, and a per-role table sums all generations of a rotated role.
-- **1.3.0** — *least code that works.* A shared rule (`skills/team/least-code.md`) binds every role: before anything is added, walk a stop order — not needed now → already in this repo → standard library → platform feature → installed dependency → one line → only then the least code in the fewest files — and never cut what protects users (trust-boundary validation, data-loss handling, security, accessibility, explicit asks). The techlead memo names the question each new file/abstraction/dependency cleared; the techlead review has an over-build pass (checklist H, tagged `drop/have/std/platform/installed/fold`, ending in `Removable: ~N lines`); the PO tiers cuts of requested scope as decisions; the scout records a *toolbox* (installed deps, platform, test pattern) so the questions are answered once. New `--lean lite|full|strict` level (default `full`) sets how hard the "is this needed?" question is pushed against the request itself. New **slim** intent: an over-build-only report on a diff, branch, area or the whole repo, no edits. Final reports and `PR-PRE.md` list what was *not built* and when to add it, plus every deliberate ceiling.
-- **1.2.0** — the coordinator is now a pure coordinator: it never reads code, scouts, reviews or rules on content (it runs on the most expensive model). A new `gogi:scout` agent (Sonnet) goes first: fetches the ticket/PR, seeds `context.md` + `facts.md` (governing docs, gate commands, file map, precedent), drafts hypothesis lanes for investigations, and answers *explain* requests. Every agent keeps a worklog at `$RUN/agents/<name>.md` (Mission / Done / Doing / Next / Pointers / Open threads / Handoff / Generations); `session-stats.sh` reports each agent's last-turn context size and flags agents over budget (`GOGI_CONTEXT_BUDGET`), and the coordinator rotates them onto a successor (`dev-2`) that resumes from the worklog. A new `gogi:monitor` agent (Sonnet) owns the heartbeat: it waits inside `watch.sh` (one Bash call, up to 9 minutes of one-minute ticks that refresh the stats and write `heartbeat.log`) and returns early only on something actionable, then wakes the coordinator with at most three lines (`rotate`, `reversal`, `frozen`, `tree moved`, `report`, `big`, `digest`, `quiet`). The coordinator no longer sleeps or reads the comms log; idle time costs no turns. Turn discipline (batch independent tool calls into one message) now binds every role. `code-comments.md` is reduced to two checks: can the code explain itself, and would deleting the comment make a wrong edit more likely; reviewers flag comments that fail.
-- **1.1.0** — the `pm` role is replaced by `po` (PO / BA): one agent that analyses the ticket and then decides as the client's proxy, within the autonomy level. `gogi:pm` no longer exists; the run artifacts are `po-brief.md` and `review-po.md`. The `dev` agent now runs on Sonnet at `xhigh` effort.
-- **1.0.0** — first release.
+**Upgrade:** `/plugin marketplace update gogi` then `/plugin update gogi@gogi` (local clone: `git pull` first; `--plugin-dir`: `git pull` then `/reload-plugins`). See [CHANGELOG.md](CHANGELOG.md) for what changed between versions.
 
 ## Use
 
 ```
-/gogi:team <request>                       # one entry point — classifies the intent, runs that playbook
-/gogi:team --autonomy high <request>       # let the PO decide the [big] gaps too; only hard stops are asked
-/gogi:team --autonomy full <request>       # never ask; every decision is logged for review in the final report
-/gogi:team --lean strict <request>         # smallest thing that satisfies the ACs; everything beyond becomes a question
-/gogi:team --weight quick <request>        # force the short path: scout → dev → check, Sonnet only (the scout still vetoes with evidence)
-/gogi:team slim <diff | branch | path | repo>   # over-build report only: what can be deleted, folded, or replaced by what exists
+/gogi:team <request>                                   # one entry point; the intent is classified for you
+/gogi:team --autonomy high <request>                   # the PO decides the [big] gaps too; only hard stops are asked
+/gogi:team --weight quick <request>                    # force the short path for a small change
+/gogi:team --lean strict <request>                     # the smallest thing that satisfies the ACs; anything more becomes a question
+/gogi:team slim <diff | branch | path | repo>          # what can be deleted, folded or replaced by what already exists
 ```
 
-Intents: implement · fix-bug · investigate · review-code · review-pr · pr-comments · breakdown · slim · explain.
-Roles (agents): `gogi:scout` (reads first — Sonnet; seeds the hub, answers *explain*), `gogi:monitor` (the heartbeat — Sonnet; wakes the coordinator only with actionable events), `gogi:dev` (only one that edits code), `gogi:techlead` (how), `gogi:po` (what — PO/BA, the client's proxy: analyses, then decides), `gogi:investigator` (why). The coordinator itself never reads code or decides content.
+A request may carry a file path, a ticket URL, a PR number or a branch name. The scout fetches it.
 
-**Context budget.** Every agent keeps `$RUN/agents/<name>.md` (what it did, is doing, will do, plus pointers into the hub). On each tick the monitor's `watch.sh` refreshes `session.md`; an agent whose last-turn context exceeds `GOGI_CONTEXT_BUDGET` (default 300000) is reported to the coordinator, told to finish its atomic step, write a handoff and stop, and a successor (`dev-2`, …) is spawned that resumes from the worklog. Nothing is lost: facts live in `facts.md`, rulings in the binding files, messages in `comms.md`, and the worklog points at all of them.
+**Intents** — implement · fix-bug · investigate · review-code · review-pr · pr-comments · breakdown · slim · explain. Each has a playbook and spawns only the roles it needs.
 
-**Autonomy** (`--autonomy`, default `low`) sets how much the team may decide without you. Every decision is tiered the same way at every level; the level only changes who answers:
+## Roles
 
-| Level | `[small]` gaps | `[big]` blockers | Hard stops (destructive, data, auth/money/PII, cross-team contracts) |
+| Role | Model | Does | Edits code |
+|---|---|---|---|
+| coordinator | your session's | classifies, spawns, relays to you, rotates agents, reports — never reads code or decides content | no |
+| `gogi:scout` | Sonnet | reads first: ticket, governing docs, file map, gate commands, toolbox; confirms the weight with evidence; answers *explain* | no |
+| `gogi:monitor` | Sonnet | owns the heartbeat; wakes the coordinator only with actionable events | no |
+| `gogi:po` | Opus | *what*: restates ACs testably, finds gaps, tiers and decides within the autonomy level, acceptance review | no |
+| `gogi:techlead` | Opus | *how*: direction memo, consults, technical + impact-range + over-build review | no |
+| `gogi:investigator` | Opus | *why*: one hypothesis lane each, root cause with evidence | no |
+| `gogi:dev` | Sonnet (Opus on heavy) | every code change, gates, red-then-green tests | **yes** |
+
+## Three dials
+
+**Weight** sizes the run. Decided per request, confirmed by the scout with evidence, overridable with `--weight`.
+
+| Weight | Triggers | Runs as | Gates |
+|---|---|---|---|
+| `quick` | ≤3 files, no consumers outside them, no contract/schema/auth/money/PII, clear ACs, known cause | scout → dev → scout check; Sonnet only, no monitor, no agreement | lint, type-check, tests covering the touched files |
+| `standard` | everything else | the intent's playbook | scoped to changed packages, widened to consumers of shared code |
+| `heavy` | shared code used by several packages, schema/contract, several stacks, migrations | breakdown first, then each task as a full run; dev on Opus | full suite per stack + consumers, architecture checker |
+
+**Autonomy** (`--autonomy`, default `low`) sets who answers a decision. Tiering never changes.
+
+| Level | `[small]` | `[big]` | Hard stops (destructive, data, auth/money/PII, cross-team contracts) |
 |---|---|---|---|
 | `low` | PO decides | you are asked | you are asked |
 | `high` | PO decides | PO decides | you are asked |
 | `full` | PO decides | PO decides | PO picks the safest reversible option; reported first |
 
-Missing inputs (a repro, a log, which of two intents you meant) are still asked at every level. No level ever allows a push or a PR. A standing choice can be saved as a `[habit]` in your preferences (`When running /gogi:team → autonomy high`).
+**Lean** (`--lean`, default `full`) sets how hard *is this needed now?* is pushed against the request. Protective code is never cut at any level.
 
-**Weight** (`--weight`, default decided per request) sizes the run so a label change does not pay for a council and a schema change does not skip one. The scout confirms the weight with evidence before anyone else is spawned.
-
-| Weight | Runs as | Models | Gates |
-|---|---|---|---|
-| `quick` | scout → dev → scout check; no monitor, no brief/memo/agreement | Sonnet only | lint, type-check, the tests covering the touched files |
-| `standard` | the intent's playbook | dev Sonnet; techlead, PO, investigators Opus | scoped to changed packages, widened to consumers of shared code |
-| `heavy` | breakdown first, then each task as a full implement | dev on Opus too | full suite per stack + consumers, architecture checker |
-
-**Lean level** (`--lean`, default `full`) sets how hard the team pushes the first question of the stop order, *is this needed now?*, against the request itself. Protected things (validation at trust boundaries, data-loss handling, security, accessibility, anything you explicitly asked for) are never cut at any level.
-
-| Level | What gets built | Who challenges the request |
+| Level | Builds | Who challenges the request |
 |---|---|---|
-| `lite` | what the ticket asks; the leaner alternative is named in the memo and the report | nobody, information only |
-| `full` | only what an AC or a decision needs; every *not built* is logged with its *add when* | the PO tiers each cut of requested scope as a `[small]` or `[big]` decision |
-| `strict` | the smallest thing that satisfies each AC; anything beyond is a `[big]` question, recommendation *don't* | the PO challenges the requirement itself |
+| `lite` | what the ticket asks; the leaner alternative is named | nobody, information only |
+| `full` | only what an AC or a decision needs; every *not built* is logged with its *add when* | the PO tiers each cut of requested scope |
+| `strict` | the smallest thing per AC; anything more is a `[big]` question | the PO challenges the requirement itself |
+
+Missing inputs (a repro, a log, which intent you meant) are asked at every level. A standing choice can be saved as a `[habit]` in your preferences.
+
+## Rules every role follows
+
+- **Least code that works.** Before adding anything: not needed now → already in this repo → standard library → platform feature → installed dependency → one line → only then the minimum. Reviews end with `Removable: ~N lines`.
+- **Comments pass two checks.** Can the code explain itself? Would deleting the comment make a wrong edit more likely? The run itself (roles, decisions, agreements) never appears in code, test names or commit messages.
+- **Agreement before code.** The PO brief and the techlead memo are agreed by the dev before the first edit. Rulings live in files, not messages; a decision may be reversed once, on a new fact.
+- **Frozen-tree reviews.** Reviews run on a tree that has stopped moving, verified by the monitor.
+- **Context budget.** Every agent keeps a worklog; when its last-turn context exceeds 300k tokens (`GOGI_CONTEXT_BUDGET`) it is rotated onto a successor that resumes from the worklog.
+- **One tool round-trip is the unit of cost.** Independent calls are batched into one message.
+- **Git.** Never push, never open a PR. The final state is uncommitted.
 
 ## What a run leaves behind
 
-`docs/.local/gogi/<date>-<intent>-<slug>/` in the project (git-ignored; the plugin adds `docs/.local/` to `.git/info/exclude` if needed):
-`context.md` (the scout's pass) · `facts.md` (cited ledger) · `agreement.md` · `comms.md` (verbatim transcript) · `agents/*.md` (one worklog per agent, with generations) · `heartbeat.log` (one line per monitor tick) · `session.md`/`.json` (per-agent token usage, last-turn context, rotate flags, heartbeat ticks) · reports / `PR-PRE.md`.
+`docs/.local/gogi/<date>-<intent>-<slug>/` in the project, git-invisible:
 
-Code changes are left **uncommitted** for review. The plugin never pushes or opens a PR.
+| File | Holds |
+|---|---|
+| `context.md` | the scout's pass: request, ticket, governing docs, gates, file map, toolbox |
+| `facts.md` | cited facts, appended by every role |
+| `agreement.md` | pointers to brief and memo, the agreed direction, what was not built |
+| `comms.md` | every message, verbatim, timestamped |
+| `agents/*.md` | one worklog per agent, with generations |
+| `session.md` | per-agent and per-role token usage, last-turn context, rotations, heartbeat ticks |
+| reports | `investigation.md`, `review-*.md`, `plan.md`, `slim.md`, `PR-PRE.md` |
 
-## Learned preferences
-
-`~/.claude/projects/<project>/memory/user-preferences.md` — `When <scene> → do <action>` rules harvested from each run; `[habit]` rules are applied without asking. Per project, compacted automatically.
-
-## Self-contained
-
-No other skill or plugin is required: reviews, PR triage, root-cause work and PR materials are all produced by the plugin's own roles and templates.
+Learned preferences go to `~/.claude/projects/<project>/memory/user-preferences.md` as `When <scene> → do <action>` rules; `[habit]` rules are applied without asking.
 
 ## Layout
 
 ```
 plugins/gogi/
 ├── .claude-plugin/plugin.json
+├── agents/                   scout, monitor, dev, techlead, po, investigator
 ├── skills/team/
 │   ├── SKILL.md              the coordinator (the only invocable skill)
-│   ├── conventions.md        single source of truth — change a rule once here
-│   ├── code-comments.md      optional convention for comments the dev writes
-│   └── playbooks/            read on demand, only for the intent that runs
-│       ├── implement.md      implement (full) / fix-bug (light) protocol
-│       ├── investigate.md    hypothesis method, four-angle impact map, verdict rubric, report
-│       ├── review.md         review checklist A–G, severity rubric, report (all reviews)
-│       ├── pr-comments.md    triage VALID / NOT_VALID / discuss, reply style, report
-│       ├── breakdown.md      approach comparison, design coverage, TASK-n format
-│       └── pr-pre.md         PR-PRE.md template
-├── agents/                   dev.md, techlead.md, po.md, investigator.md
-└── scripts/                  log.sh (chronological comms log), session-stats.sh (token stats)
+│   ├── conventions.md        single source of truth; change a rule once here
+│   ├── least-code.md         the stop order, the lean level, the over-build review
+│   ├── code-comments.md      the two checks
+│   └── playbooks/            read only for the intent that runs
+│       ├── quick.md          weight quick: scout → dev → check
+│       ├── implement.md      full / light / heavy modes
+│       ├── investigate.md    hypothesis method, impact map, verdict rubric
+│       ├── review.md         checklist A–H, severity, report
+│       ├── pr-comments.md    triage and reply style
+│       ├── breakdown.md      approaches, design coverage, TASK-n
+│       └── pr-pre.md         PR description template
+└── scripts/                  log.sh (comms log), watch.sh (heartbeat), session-stats.sh (token stats)
 ```
-
-`conventions.md` binds every skill and agent; change a rule once there.
