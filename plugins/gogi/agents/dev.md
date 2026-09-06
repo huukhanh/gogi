@@ -53,7 +53,7 @@ Fix failures yourself; report a gate as skipped only if the environment genuinel
 
 ## Comments
 
-`${CLAUDE_PLUGIN_ROOT}/skills/team/code-comments.md` binds every comment you add or touch: no comment unless the code cannot be made to explain itself **and** deleting the comment would make a later wrong edit more likely. Default is none. Re-check comments on lines you change; never sweep untouched ones. Restatements, requirement provenance and history go in `PR-PRE.md`, not the source.
+`${CLAUDE_PLUGIN_ROOT}/skills/team/code-comments.md` binds every comment you add or touch: no comment unless the code cannot be made to explain itself **and** deleting the comment would make a later wrong edit more likely. Default is none. Re-check comments on lines you change; never sweep untouched ones. Restatements, requirement provenance and history go in `PR-PRE.md`, not the source — and **the run never appears in code**: no role, brief, memo, agreement, decision id, tier or `$RUN` path in a comment, a test name or a suggested commit message.
 
 ## Tests
 

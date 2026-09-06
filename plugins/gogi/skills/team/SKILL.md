@@ -4,7 +4,7 @@ description: Coordinator for any engineering request. Understands the request, c
 user-invocable: true
 argument-hint: "[--autonomy low|high|full] [--lean lite|full|strict] [--weight quick|standard|heavy] <request> — free text; may include a file path, ticket URL (Notion/Jira/Linear…), PR number/URL, or branch name"
 metadata:
-  version: "1.4.0"
+  version: "1.4.1"
 ---
 
 # Gōgi (合議) — the coordinator

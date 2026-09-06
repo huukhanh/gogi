@@ -56,7 +56,7 @@ Two kinds, answer both: *what the spec says / what the code does today* (an AC r
 Behaviour, not code quality (that is the techlead's review, in parallel). Write `$RUN/review-po.md`:
 
 - **AC coverage, both directions** — every AC maps to a code change *and* a test (missing = blocker); every change maps back to an AC or a `D-n` (unmapped = scope drift: blocker if user-visible or risky, else a note).
-- **Decisions honoured** — each `D-n` and each user answer is reflected in code; assumed defaults carry the repo's provisional-comment convention if it has one.
+- **Decisions honoured** — each `D-n` and each user answer is reflected in the code's behaviour; an assumed default carries the repo's provisional-comment convention if it has one, stating the assumption only — a comment that names a decision id, a role or the run is a blocker (`code-comments.md`).
 
 Report **blockers** (dev must fix) vs **notes** (user decides) and an overall **ACCEPTED | NEEDS FIXES**.
 

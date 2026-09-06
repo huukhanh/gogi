@@ -8,7 +8,7 @@ For implement / fix-bug runs at weight `quick` (criteria in `conventions.md § W
 2. **Coordinator** spawns `dev` with `$WEIGHT quick` and a pointer to `context.md § Change`. Nothing else is spawned.
 3. **Dev** reads conventions, `least-code.md` and `§ Change`; makes exactly that edit; runs the listed gates as one command; updates its worklog; reports in ≤10 lines — files, one line of gate output each, a suggested conventional commit message.
 4. **Coordinator** messages `scout` → `check`.
-5. **Scout** re-reads `§ Change` and the frozen diff (`git diff`, `git status --short`), nothing else, and replies `ok` or `blockers:` in ≤5 lines: the diff does exactly what was asked · touches nothing outside `§ Change` · the listed gates ran and the report quotes them · added comments pass the two checks · no new dependency.
+5. **Scout** re-reads `§ Change` and the frozen diff (`git diff`, `git status --short`), nothing else, and replies `ok` or `blockers:` in ≤5 lines: the diff does exactly what was asked · touches nothing outside `§ Change` · the listed gates ran and the report quotes them · added comments pass the two checks and mention nothing about the run · no new dependency.
 6. Blockers → dev → check again. **Two failed rounds → re-weigh** (below).
 7. **Coordinator**: harvest preferences, final report — diff summary, gates as reported, the commit message, `weight: quick` — and stop. No `PR-PRE.md`.
 

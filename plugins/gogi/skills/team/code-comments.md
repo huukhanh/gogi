@@ -7,6 +7,10 @@ Code comments are noise by default. A comment survives only if it passes **both*
 
 Fail either check → no comment.
 
+## The run never appears in code
+
+A comment describes the code, for a reader who has never heard of this plugin. **Nothing about how the change was made goes into the source**: no role (PO, techlead, scout, dev, investigator), no artifact (brief, memo, agreement, comms, worklog, `$RUN` paths), no decision id (`D-3`), no tier (`[small]`/`[big]`), no autonomy or lean level, no "as agreed" / "per the ticket" / "the reviewer asked". Those belong in `PR-PRE.md` and the run directory. A comment that needs them to make sense fails check 2 anyway: a future editor cannot open the run. The same holds for commit messages the dev suggests and for test names.
+
 ## Scope
 
 - **Comments you add** in a diff must pass both checks.
@@ -46,6 +50,6 @@ const { pathname, searchParams } = new URL(fullPath, DUMMY_PARSE_BASE);
 
 ## Always allowed
 
-- A `Provisional:` comment recording a deferred decision, in the form the repo's `CLAUDE.md` prescribes.
+- A `Provisional:` comment recording a deferred decision, in the form the repo's `CLAUDE.md` prescribes — it states the assumption made and what would change it (`Provisional: 30-day window until retention policy is confirmed`), never who decided or where.
 - A lint/type suppression that states its reason.
-- A ceiling comment naming a known limit and its upgrade path, in the repo's marker if it defines one.
+- A ceiling comment naming a known limit and its upgrade path, in the repo's marker if it defines one — the limit and the upgrade, nothing about the run that chose it.
