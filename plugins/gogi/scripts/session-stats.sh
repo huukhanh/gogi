@@ -9,7 +9,7 @@ RUN_DIR="${1:?usage: session-stats.sh <RUN_DIR> [SESSION_ID]}"
 CONTEXT_BUDGET="${GOGI_CONTEXT_BUDGET:-120000}"
 TURN_BUDGET="${GOGI_TURN_BUDGET:-60}"
 HB_TICKS="$( [ -f "$RUN_DIR/heartbeat.log" ] && wc -l < "$RUN_DIR/heartbeat.log" | tr -d ' ' || echo 0 )"
-PROJ_DIR="$HOME/.claude/projects/$(pwd | sed 's#[/.]#-#g')"
+PROJ_DIR="${GOGI_PROJ_DIR:-$HOME/.claude/projects/$(pwd | sed 's#[/.]#-#g')}"
 [ -d "$PROJ_DIR" ] || { echo "no project transcript dir: $PROJ_DIR" >&2; exit 1; }
 
 SESSION_ID="${2:-$(ls -t "$PROJ_DIR"/*.jsonl | head -1 | xargs -n1 basename | sed 's/\.jsonl$//')}"
@@ -24,7 +24,7 @@ stats_for() { # <file> <label>
     def dedupe: map(select(.type=="assistant")) | group_by(.message.id) | map(last);
     def ctx_of: (.message.usage.input_tokens // 0) + (.message.usage.cache_creation_input_tokens // 0) + (.message.usage.cache_read_input_tokens // 0);
     (map(select(.type=="assistant")) | first // {}) as $first
-    | (map(select(.type=="assistant")) | last // {}) as $last
+    | (map(select(.type=="assistant" and (ctx_of > 0))) | last // {}) as $last
     | (dedupe) as $msgs
     | {
         agent: $agent_name,
@@ -54,21 +54,30 @@ stats_for() { # <file> <label>
   if [ -d "$SUB_DIR" ]; then
     for f in "$SUB_DIR"/agent-*.jsonl; do
       [ -e "$f" ] || continue
-      name="$(basename "$f" .jsonl | sed -E 's/^agent-a?//; s/-[0-9a-f]{16}$//')"
+      meta="${f%.jsonl}.meta.json"
+      id="$(basename "$f" .jsonl | sed -E 's/^agent-a?//')"
+      name="$( [ -f "$meta" ] && jq -r --arg id "${id: -8}" '.name // (.agentType + "@" + $id)' "$meta" || echo "$id" )"
       stats_for "$f" "$name"
     done
   fi
 } | jq -s --arg sid "$SESSION_ID" --arg cwd "$(pwd)" --arg run "$RUN_DIR" --argjson ctx_budget "$CONTEXT_BUDGET" --argjson turn_budget "$TURN_BUDGET" --argjson hb_ticks "$HB_TICKS" '
-  {
+  (map(.agent)) as $names
+  | def lineage(n): (n | sub("-[0-9]+$"; "")) as $p
+      | if (n | test("-[0-9]+$")) and ($names | index($p)) != null then lineage($p) else n end;
+  def successor_re(a): "^" + (a | gsub("(?<c>[.^$*+?()\\[\\]{}|])"; "\\" + .c)) + "-[0-9]+$";
+  (map(. + { lineage: lineage(.agent),
+             superseded: (.agent as $a | $names | map(select(test(successor_re($a)))) | length > 0) })
+   | map(.rotate = (.rotate and (.superseded | not)))) as $agents
+  | {
     session_id: $sid, cwd: $cwd, run_dir: $run,
     generated_at: (now | todate),
     branch: (map(.branch) | map(select(. != null)) | first),
     claude_code_version: (map(.version) | map(select(. != null)) | first),
     started: (map(.started) | map(select(. != null)) | min),
     ended:   (map(.ended)   | map(select(. != null)) | max),
-    agents: .,
+    agents: $agents,
     context_budget: $ctx_budget, turn_budget: $turn_budget,
-    rotate: (map(select(.rotate) | .agent)),
+    rotate: ($agents | map(select(.rotate) | .agent)),
     heartbeat_ticks: (if $hb_ticks > 0 then $hb_ticks else (map(select(.agent=="coordinator") | .heartbeat_ticks) | add // 0) end),
     totals: {
       turns: (map(.turns) | add),
@@ -78,7 +87,15 @@ stats_for() { # <file> <label>
       total_input_tokens: (map(.total_input_tokens) | add),
       output_tokens: (map(.output_tokens) | add),
       tool_calls: (map(.tool_calls | to_entries) | add // [] | group_by(.key) | map({key: .[0].key, value: (map(.value) | add)}) | from_entries)
-    }
+    },
+    lineages: ($agents | group_by(.lineage) | map(sort_by(.started)) | map({
+      lineage: .[0].lineage,
+      generations: (map(.agent) | join(" → ")),
+      count: length,
+      turns: (map(.turns) | add),
+      total_input_tokens: (map(.total_input_tokens) | add),
+      output_tokens: (map(.output_tokens) | add)
+    }) | map(select(.count > 1)))
   }' > "$RUN_DIR/session.json"
 
 jq -r '
@@ -94,10 +111,18 @@ jq -r '
   "",
   "| Agent | Model | Turns | Context (last turn) | Input (fresh) | Cache write | Cache read | Total input | Output | Tool calls |",
   "|---|---|---:|---:|---:|---:|---:|---:|---:|---|",
-  (.agents[] | "| \(.agent) | \(.model // "-") | \(.turns) | \(.context_tokens|n)\(if .rotate then " ⚠ rotate" else "" end) | \(.input_tokens|n) | \(.cache_creation_tokens|n) | \(.cache_read_tokens|n) | \(.total_input_tokens|n) | \(.output_tokens|n) | \(.tool_calls | to_entries | map("\(.key) \(.value)") | join(", ")) |"),
+  (.agents[] | "| \(.agent)\(if .superseded then " (rotated)" else "" end) | \(.model // "-") | \(.turns) | \(.context_tokens|n)\(if .rotate then " ⚠ rotate" else "" end) | \(.input_tokens|n) | \(.cache_creation_tokens|n) | \(.cache_read_tokens|n) | \(.total_input_tokens|n) | \(.output_tokens|n) | \(.tool_calls | to_entries | map("\(.key) \(.value)") | join(", ")) |"),
   (.totals | "| **all** |  | \(.turns) |  | \(.input_tokens|n) | \(.cache_creation_tokens|n) | \(.cache_read_tokens|n) | **\(.total_input_tokens|n)** | **\(.output_tokens|n)** | \(.tool_calls | to_entries | map("\(.key) \(.value)") | join(", ")) |"),
+  (if (.lineages | length) > 0 then
+    "",
+    "**Per role across generations** (rows of rotated agents are never merged or overwritten; this is their sum)",
+    "",
+    "| Role | Generations | Turns | Total input | Output |",
+    "|---|---|---:|---:|---:|",
+    (.lineages[] | "| \(.lineage) | \(.generations) | \(.turns) | \(.total_input_tokens|n) | \(.output_tokens|n) |")
+  else empty end),
   "",
-  "_Context = total input of the most recent turn of that agent (what every further turn re-sends). Fresh input = uncached prompt tokens; cache write/read are prompt-cache tokens. Total input = sum of the three, over all turns. Streaming duplicates are deduped by message id._"
+  "_Every spawned agent keeps its own row for the whole session, finished or not; all token columns are sums over all its turns. Context = total input of the most recent turn of that agent (what every further turn re-sends). Fresh input = uncached prompt tokens; cache write/read are prompt-cache tokens. Total input = sum of the three, over all turns. Streaming duplicates are deduped by message id._"
 ' "$RUN_DIR/session.json" > "$RUN_DIR/session.md"
 
 echo "$RUN_DIR/session.md"
