@@ -65,6 +65,23 @@ One file per agent lineage, named after the spawn name without generation suffix
 
 The successor appends a `Generations` row on start and writes `Done/Doing/Next` back as it goes, so the file is always restart-safe.
 
+## Weight — how much process a task gets
+
+Every implement / fix-bug run carries **`$WEIGHT`** ∈ `quick | standard | heavy`. Quality is fixed; the weight only sets how many roles, which models and which gates it takes to reach it. A wrong weight is corrected mid-run, never tolerated: any role that finds the criteria no longer hold says `re-weigh: <evidence>` to the coordinator, who moves the run up (or, rarely, down) and spawns what the new weight needs.
+
+| | **quick** | **standard** (default) | **heavy** |
+|---|---|---|---|
+| **Criteria — all must hold / any triggers** | ≤3 files · no touched symbol has consumers outside those files (scout greps) · no schema, contract, migration, auth, money or PII · ACs unambiguous, no behaviour decision open · for a bug: cause known from the request or found by the scout's skim | everything that is neither | shared/library code with consumers in ≥2 packages · schema or contract change · ≥2 stacks · a migration or data change · roughly ≥10 files |
+| **Roles** | scout → dev → scout check (`playbooks/quick.md`) | per playbook (po, techlead, dev, investigators, monitor) | `implement.md` § Heavy: breakdown first, then each TASK-n as a full run, PO always present |
+| **Models** | Sonnet only (scout, dev as defined) | as defined (dev Sonnet, techlead/po/investigator Opus) | as defined, **dev on Opus** (`model: "opus"` at spawn — a mistake in shared code costs more than the model does) |
+| **Direction** | `context.md § Change` written by the scout *is* the direction: files, exact change, gates; no brief, memo or agreement | brief + memo + agreement | breakdown plan + per-task agreement |
+| **Gates** | only what the touched files trigger: lint + type-check + the test files covering the touched module (full suite only if the repo is tiny) | dev rules: scoped to changed packages, widened to consumers of shared code | full suite per stack touched + consumers; architecture checker mandatory |
+| **Review** | scout **check** on the frozen diff: matches the request, nothing else touched, gates ran; blockers → dev; still wrong after 2 rounds → re-weigh to standard | techlead (+ PO acceptance) on the frozen tree | same, plus impact-range section mandatory (checklist E), per task |
+| **Monitor / rotation** | none — a quick run ends before a budget matters | yes | yes |
+| **Deliverable** | uncommitted diff + a suggested commit message (no `PR-PRE.md`) | uncommitted diff + `PR-PRE.md` | plan + per-task diffs + `PR-PRE.md` |
+
+Resolution: `--weight quick|standard|heavy` in the arguments wins; else the coordinator sets a **provisional** weight from the request text ("change the label / constant / copy / config value / one-liner" → quick; "across / all callers / migration / API / shared" → heavy; else standard); the **scout confirms or overrides it with evidence** (file count, consumer grep, contract touch) in its report, and the coordinator states the final weight in the opening line. Other intents ignore weight, except that `slim`, `review-code` and `breakdown` on a heavy target tell the reviewer to sample by area. A `[habit]` may set a default weight. *Least code* (below) and every protective rule apply at every weight — quick is less ceremony, not less care.
+
 ## Least code that works
 
 **`${CLAUDE_PLUGIN_ROOT}/skills/team/least-code.md` binds every role.** Before anything is added — a function, a type, a file, a layer, a dependency, a fixture — walk its stop order and stop at the first question that holds: not needed now → already in this repo → standard library → platform feature → installed dependency → one line → only then the least code, in the fewest files. Nothing unrequested is abstracted, configured or wrapped; nothing protective is cut (trust-boundary validation, data-loss handling, security, accessibility, what the user asked for). Understanding comes first: the rule shortens the solution, never the reading. Every run carries **`$LEAN`** ∈ `lite | full | strict` (default `full`; resolved like `$AUTONOMY` and passed to every role) — it sets how hard the *is this needed?* question is pushed against the request itself. The techlead memo names the question each new thing cleared; the techlead review has a dedicated over-build pass (checklist H, `Removable: ~N lines`); the final report lists what was **not built** and when to add it, plus every deliberate ceiling.

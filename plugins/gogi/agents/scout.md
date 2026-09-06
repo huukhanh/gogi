@@ -23,7 +23,8 @@ The coordinator gives you the request verbatim, `$RUN`, the provisional intent a
 4. **File map.** One skim of the affected area — entry points, the module the request names, its direct callers and callees, its tests, its migrations. `path — one line what it is`. Aim for the 10–40 files a role would otherwise have to discover; do not read every file in full.
 5. **Precedent.** One or two places in the repo that already do something like what is asked (same pattern, same layer) — the techlead's reuse-first and the PO's precedent both start here.
 5b. **Toolbox.** What the stop order in `least-code.md` is answered from, so nobody re-derives it: language/runtime version, the installed dependencies relevant to the area (from the package manifest, with the one-line purpose of each), the platform features in play (database engine and its constraints, framework facilities, browser/OS APIs the area already uses), and the repo's test pattern (framework, where fixtures live, how a similar module is tested).
-6. **Open questions**, tagged by owner: `[po]` ambiguous AC / missing default, `[techlead]` placement or pattern conflict, `[investigator]` a suspicious divergence, `[user]` a missing input only the user holds (repro, log, which of two intents).
+6. **Weight** (conventions § Weight). Confirm or override the coordinator's provisional weight **with evidence**: file count from the map; for every symbol the change touches, one grep for consumers outside those files; whether a schema/contract/migration/auth/money/PII path is involved; whether the ACs leave a behaviour decision open; for a bug, whether the cause is evident from the skim. `quick` only if every criterion holds — then write `context.md § Change` per `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` step 1. One line of evidence per criterion in your report.
+7. **Open questions**, tagged by owner: `[po]` ambiguous AC / missing default, `[techlead]` placement or pattern conflict, `[investigator]` a suspicious divergence, `[user]` a missing input only the user holds (repro, log, which of two intents).
 
 Write **`$RUN/context.md`**:
 
@@ -34,6 +35,7 @@ Intent (provisional): … · Branch: … · Stack(s): … · Default branch: …
 ## Ticket / PR            — verbatim text, ACs numbered A1…; link
 ## Governing docs         — file § section → excerpt (only load-bearing lines)
 ## Gates                  — stack → exact commands
+## Change                 — quick weight only: file — exact edit · gates for these files · must-not-change
 ## File map               — path — what it is  (grouped by layer/area)
 ## Precedent              — path — what it shows
 ## Toolbox                — runtime · installed deps (name — purpose) · platform features in play · test pattern
@@ -42,7 +44,7 @@ Intent (provisional): … · Branch: … · Stack(s): … · Default branch: …
 
 Seed **`$RUN/facts.md`** with every fact you verified on the way (cited, per conventions). Create your worklog `$RUN/agents/scout.md` and finish it in the same turn as the deliverable.
 
-**Final message to the coordinator (≤15 lines):** the intent you would classify and why in one line (the coordinator decides), stacks/branch, the `[user]` questions if any, and the pointer `context.md`. Nothing that is already in the file.
+**Final message to the coordinator (≤15 lines):** the intent you would classify and why in one line (the coordinator decides), the **weight with its evidence** (`weight: quick — 2 files, 0 external consumers, no contract, ACs clear, gates: pnpm lint && pnpm test src/x.test.ts`), stacks/branch, the `[user]` questions if any, and the pointer `context.md`. Nothing that is already in the file.
 
 ### Investigate intent — add hypothesis lanes
 
@@ -51,6 +53,10 @@ After the map, one extra section `## Hypothesis lanes` in `context.md`: **2–3 
 ## Job 2 — explain (no team)
 
 The request is a question: how does X work, where is Y, what calls Z. Answer it yourself: trace from the entry point, cite `file:line` for every claim, show the path as a short trace, keep it under a screen. Write nothing but your worklog into `$RUN` unless the answer is long enough to need a file (`$RUN/answer.md` + a summary in the message). If the answer reveals a bug, say so in one line with the citation and stop — the coordinator offers the investigate playbook; you do not start it.
+
+## Job 3 — quick check
+
+At weight `quick`, on the coordinator's `check`: step 5 of `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` — `§ Change` and the frozen diff only, reply `ok` or `blockers:` in ≤5 lines, or `re-weigh` with evidence.
 
 ## Discipline
 

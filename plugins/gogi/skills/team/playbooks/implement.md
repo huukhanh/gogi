@@ -4,8 +4,12 @@ Read by the coordinator when the intent is **implement** or **fix-bug**. `conven
 
 ## Modes
 
+Weight (conventions § Weight) picks the mode: `quick` → **`playbooks/quick.md`**, not this file; `standard` → **Full** for implement, **Light** for fix-bug; `heavy` → **Heavy** below.
+
 - **Full** (implement: features, refactors, multi-AC tickets): po + techlead + dev.
 - **Light** (fix-bug: small, findable cause): dev + techlead only; memo and agreement fit in one exchange each; **PO spawned on demand** the moment a behaviour question appears. The coordinator spawns **one `gogi:investigator`** on the symptom *before* the dev starts (or reuses an existing investigation report); the dev fixes the root cause at the shared site, red-then-green regression test, consumer-widened gates. Review: techlead only (PO acceptance review only if a PO was spawned). **Re-classify instead of growing**: if the bug turns out to be a design flaw, needs a behaviour decision, or touches more than a handful of files, stop, report, and continue in full mode — a "small fix" never silently becomes a feature.
+
+- **Heavy** (weight `heavy`: shared code with consumers in several packages, a schema or contract change, several stacks, a migration, ~10+ files): run `playbooks/breakdown.md` first — the plan's `[big]` questions are asked before any code — then each **TASK-n in dependency order as its own Full run inside the same `$RUN`** (`agreement.md` gets a section per task; `dev` spawned with `model: "opus"`; PO always present). Per task: agreement → build → freeze → techlead + PO review → next task; the monitor runs throughout and rotates as needed. Gates per task are the full suite of every stack the task touches plus consumers; the architecture checker is mandatory; the techlead's impact-range section (checklist E) may never be "n/a". One `PR-PRE.md` at the end covering all tasks, plus a suggested commit per task. If a task's review finds the plan wrong, stop, re-enter breakdown for the remaining tasks, and say so in the final report.
 
 ## Step 1 — Stack + branch
 
@@ -32,7 +36,7 @@ When the brief and memo arrive, write pointers + the key rulings + the combined 
 
 ## Step 4 — Done → freeze → reviews
 
-1. Check the dev's report: gates listed with results (if vague, ask the dev to re-run and quote — never run or read them yourself); bug task → red-then-green evidence present.
+1. Check the dev's report: gates listed with results (if vague, ask the dev to re-run and quote — never run or read them yourself); bug task → red-then-green evidence present; weight `heavy` → full suite per stack + consumers listed.
 2. **Freeze the tree** per conventions: tell the monitor `phase: freeze`; it reports `frozen` after one unchanged tick. Then `phase: review`.
 3. **Parallel reviews on the frozen tree**: techlead — technical + impact range → `$RUN/review-techlead.md`; po (if present) — acceptance against the brief and logged decisions → `$RUN/review-po.md`. Blockers → dev fixes → re-freeze → re-review only the fix; max 3 rounds, then stop and report. Suggestions/notes → final report.
 4. `git reset --soft` any WIP snapshots. Tell all roles the run is complete — but keep `techlead` addressable: any code change after this point (user follow-up, merge from the default branch, migration renumber) gets a **targeted techlead re-check of the delta** before it is reported, or is recorded as *user-accepted, unreviewed*. Re-run `session-stats.sh` after every follow-up.
