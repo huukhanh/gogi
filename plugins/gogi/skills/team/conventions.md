@@ -53,7 +53,7 @@ One file per agent lineage, named after the spawn name without generation suffix
 
 ### Budget and the coordinator's watch
 
-`session-stats.sh` reports, per agent, the **context size of the last turn** (`Context` column) and the turn count. Default budget: **120k context tokens or 60 turns**, whichever comes first (`GOGI_CONTEXT_BUDGET` / `GOGI_TURN_BUDGET` override). The **monitor** refreshes the table on every tick and reports a newly flagged agent to the coordinator (`rotate dev — …`); the coordinator rotates it at its next safe point. It is never rotated mid-edit (a half-applied change) or mid-review (a review is short; let it finish); the rotate message says so.
+`session-stats.sh` reports, per agent, the **context size of the last turn** (`Context` column) and the turn count. Default budget: **300k context tokens** on the last turn (`GOGI_CONTEXT_BUDGET` override); the turn count is reported but never triggers a rotation. The **monitor** refreshes the table on every tick and reports a newly flagged agent to the coordinator (`rotate dev — …`); the coordinator rotates it at its next safe point. It is never rotated mid-edit (a half-applied change) or mid-review (a review is short; let it finish); the rotate message says so.
 
 ### Rotation protocol (coordinator)
 

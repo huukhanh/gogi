@@ -2,12 +2,11 @@
 # session-stats.sh <RUN_DIR> [SESSION_ID]
 # Aggregates token usage for the current Claude Code session (main transcript + every subagent transcript)
 # into $RUN_DIR/session.json and $RUN_DIR/session.md. Overwrites both, so it can run on every heartbeat.
-# GOGI_CONTEXT_BUDGET / GOGI_TURN_BUDGET set the per-agent rotation thresholds (conventions § Context budget).
+# GOGI_CONTEXT_BUDGET sets the per-agent rotation threshold on last-turn context (conventions § Context budget).
 set -euo pipefail
 
 RUN_DIR="${1:?usage: session-stats.sh <RUN_DIR> [SESSION_ID]}"
-CONTEXT_BUDGET="${GOGI_CONTEXT_BUDGET:-120000}"
-TURN_BUDGET="${GOGI_TURN_BUDGET:-60}"
+CONTEXT_BUDGET="${GOGI_CONTEXT_BUDGET:-300000}"
 HB_TICKS="$( [ -f "$RUN_DIR/heartbeat.log" ] && wc -l < "$RUN_DIR/heartbeat.log" | tr -d ' ' || echo 0 )"
 PROJ_DIR="${GOGI_PROJ_DIR:-$HOME/.claude/projects/$(pwd | sed 's#[/.]#-#g')}"
 [ -d "$PROJ_DIR" ] || { echo "no project transcript dir: $PROJ_DIR" >&2; exit 1; }
@@ -20,7 +19,7 @@ mkdir -p "$RUN_DIR"
 # One JSON object per transcript. Streaming emits several assistant records per message.id with the
 # same usage, so we keep one record per id (the last one) before summing.
 stats_for() { # <file> <label>
-  jq -sc --arg agent_name "$2" --argjson ctx_budget "$CONTEXT_BUDGET" --argjson turn_budget "$TURN_BUDGET" '
+  jq -sc --arg agent_name "$2" --argjson ctx_budget "$CONTEXT_BUDGET" '
     def dedupe: map(select(.type=="assistant")) | group_by(.message.id) | map(last);
     def ctx_of: (.message.usage.input_tokens // 0) + (.message.usage.cache_creation_input_tokens // 0) + (.message.usage.cache_read_input_tokens // 0);
     (map(select(.type=="assistant")) | first // {}) as $first
@@ -45,7 +44,7 @@ stats_for() { # <file> <label>
         context_tokens: ($last | if . == {} then 0 else ctx_of end)
       }
     | .total_input_tokens = (.input_tokens + .cache_creation_tokens + .cache_read_tokens)
-    | .rotate = (.agent != "coordinator" and (.context_tokens >= $ctx_budget or .turns >= $turn_budget))
+    | .rotate = (.agent != "coordinator" and .context_tokens >= $ctx_budget)
   ' "$1"
 }
 
@@ -60,7 +59,7 @@ stats_for() { # <file> <label>
       stats_for "$f" "$name"
     done
   fi
-} | jq -s --arg sid "$SESSION_ID" --arg cwd "$(pwd)" --arg run "$RUN_DIR" --argjson ctx_budget "$CONTEXT_BUDGET" --argjson turn_budget "$TURN_BUDGET" --argjson hb_ticks "$HB_TICKS" '
+} | jq -s --arg sid "$SESSION_ID" --arg cwd "$(pwd)" --arg run "$RUN_DIR" --argjson ctx_budget "$CONTEXT_BUDGET" --argjson hb_ticks "$HB_TICKS" '
   (map(.agent)) as $names
   | def lineage(n): (n | sub("-[0-9]+$"; "")) as $p
       | if (n | test("-[0-9]+$")) and ($names | index($p)) != null then lineage($p) else n end;
@@ -76,7 +75,7 @@ stats_for() { # <file> <label>
     started: (map(.started) | map(select(. != null)) | min),
     ended:   (map(.ended)   | map(select(. != null)) | max),
     agents: $agents,
-    context_budget: $ctx_budget, turn_budget: $turn_budget,
+    context_budget: $ctx_budget,
     rotate: ($agents | map(select(.rotate) | .agent)),
     heartbeat_ticks: (if $hb_ticks > 0 then $hb_ticks else (map(select(.agent=="coordinator") | .heartbeat_ticks) | add // 0) end),
     totals: {
@@ -107,7 +106,7 @@ jq -r '
   "- Session: `\(.session_id)`  ·  Claude Code \(.claude_code_version // "?")  ·  branch `\(.branch // "?")`",
   "- Window: \(.started // "?") → \(.ended // "?")  (\(dur))  ·  generated \(.generated_at)",
   "- Run dir: `\(.run_dir)`  ·  heartbeat ticks: \(.heartbeat_ticks) (monitor watch.sh ticks from heartbeat.log; expect ≈ run minutes; 0 = no monitor ran)",
-  "- Budget: \(.context_budget) context tokens or \(.turn_budget) turns per agent  ·  **rotate now: \(if (.rotate|length) > 0 then (.rotate|join(", ")) else "none" end)**",
+  "- Budget: \(.context_budget) context tokens per agent (last turn)  ·  **rotate now: \(if (.rotate|length) > 0 then (.rotate|join(", ")) else "none" end)**",
   "",
   "| Agent | Model | Turns | Context (last turn) | Input (fresh) | Cache write | Cache read | Total input | Output | Tool calls |",
   "|---|---|---:|---:|---:|---:|---:|---:|---:|---|",
