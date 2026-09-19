@@ -18,11 +18,13 @@ STATE="$RUN_DIR/.watch-state"; HB="$RUN_DIR/heartbeat.log"; COMMS="$RUN_DIR/comm
 URGENT_RE='^### \[[0-9:]+\] .* \(kind: (decision \[(small|big)\]|report|status)\)'
 
 mkdir -p "$RUN_DIR"; touch "$COMMS" "$HB"
-tree_sig() { { git status --short; git diff --stat; } 2>/dev/null | shasum | cut -c1-12; }
+tree_sig() { { git status --short; git diff HEAD; } 2>/dev/null | shasum | cut -c1-12; }
 comms_lines() { wc -l < "$COMMS" | tr -d ' '; }
 
-TREE="$(tree_sig)"; LINES="$(comms_lines)"; ROTATE=""; TICKS=0
+ROTATE=""; TICKS=0; LINES=""
 [ -f "$STATE" ] && . "$STATE"
+TREE="$(tree_sig)"                 # state ("what is the tree now?") — always fresh
+LINES="${LINES:-$(comms_lines)}"   # cursor ("what has the coordinator not seen?") — carried across calls, seeded on the first
 BASE_LINES="$LINES"; BASE_TREE="$TREE"
 START_TS="$(date +%s)"; START_HM="$(date +%H:%M)"
 reason="timeout"; call_ticks=0
@@ -38,16 +40,16 @@ while :; do
     "$(date +%H:%M)" "$TICKS" "$MODE" "$total" "${rotate:-none}" "$now_tree" "$now_lines" >> "$HB"
 
   if [ -n "$rotate" ] && [ "$rotate" != "$ROTATE" ]; then reason="rotate"; break; fi
-  if [ "$now_lines" -gt "$LINES" ] && tail -n +"$((LINES + 1))" "$COMMS" | grep -Eq "$URGENT_RE"; then reason="comms"; break; fi
   case "$MODE" in
     freeze) [ "$now_tree" = "$TREE" ] && { reason="frozen"; break; } ;;
     review) [ "$now_tree" != "$TREE" ] && { reason="tree-moved"; break; } ;;
   esac
+  if [ "$now_lines" -gt "$LINES" ] && tail -n +"$((LINES + 1))" "$COMMS" | grep -Eq "$URGENT_RE"; then reason="comms"; break; fi
   TREE="$now_tree"
   if [ $(( $(date +%s) - START_TS + INTERVAL )) -gt "$MAX" ]; then break; fi
 done
 
-printf 'TREE=%q\nLINES=%q\nROTATE=%q\nTICKS=%q\n' "$now_tree" "$now_lines" "$rotate" "$TICKS" > "$STATE"
+printf 'LINES=%q\nROTATE=%q\nTICKS=%q\n' "$now_lines" "$rotate" "$TICKS" > "$STATE"
 
 status_lines="$(git status --short 2>/dev/null | wc -l | tr -d ' ')"
 out_tokens="$(jq -r '.totals.output_tokens // 0' "$RUN_DIR/session.json" 2>/dev/null || echo 0)"
@@ -61,7 +63,9 @@ new=$((now_lines - BASE_LINES))
 if [ "$new" -gt 0 ]; then
   echo "new comms entries ($new lines, from comms.md:$((BASE_LINES + 1))):"
   tail -n +"$((BASE_LINES + 1))" "$COMMS" | head -n 120
-  [ "$new" -gt 120 ] && echo "  … truncated; read comms.md from line $((BASE_LINES + 121))"
+  if [ "$new" -gt 120 ]; then
+    echo "  … truncated; read comms.md from line $((BASE_LINES + 121))"
+  fi
 else
   echo "new comms entries: none"
 fi

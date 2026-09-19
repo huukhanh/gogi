@@ -10,7 +10,7 @@ Every team agent (`scout`, `monitor`, `dev`, `techlead`, `po`, `investigator`) r
 | **scout** | the first pass: fetches the ticket/PR, skims the area, seeds `context.md` + `facts.md`; answers *explain* requests; drafts hypothesis lanes for investigations | no |
 | **monitor** | the heartbeat: waits in `watch.sh`, refreshes stats every tick, reads new comms entries, and wakes the coordinator only with an actionable event (rotate candidate, reversal loop, frozen/moved tree, report, digest) | no |
 | **dev** | every code change; quality gates; tests | **yes — the only one** |
-| **techlead** | *how*: architecture, placement, patterns, dependencies, schema shape, gates, impact range | no |
+| **techlead** | *how*: architecture, placement, patterns, dependencies, schema shape, gates, impact range · verifying the dev's finished work — the only role that does, at every weight | no |
 | **po** (PO / BA — the client's proxy) | *what*: analyses the ticket, ACs, business rules and precedent, then decides defaults, edge-case behaviour, scope, ship tradeoffs within the autonomy level | no |
 | **investigator** | *why*: root cause with evidence and confidence | no |
 
@@ -72,11 +72,11 @@ Every implement / fix-bug run carries **`$WEIGHT`** ∈ `quick | standard | heav
 | | **quick** | **standard** (default) | **heavy** |
 |---|---|---|---|
 | **Criteria — all must hold / any triggers** | ≤3 files · no touched symbol has consumers outside those files (scout greps) · no schema, contract, migration, auth, money or PII · ACs unambiguous, no behaviour decision open · for a bug: cause known from the request or found by the scout's skim | everything that is neither | shared/library code with consumers in ≥2 packages · schema or contract change · ≥2 stacks · a migration or data change · roughly ≥10 files |
-| **Roles** | scout → dev → scout check (`playbooks/quick.md`) | per playbook (po, techlead, dev, investigators, monitor) | `implement.md` § Heavy: breakdown first, then each TASK-n as a full run, PO always present |
-| **Models** | Sonnet only (scout, dev as defined) | as defined (dev Sonnet, techlead/po/investigator Opus) | as defined, **dev on Opus** (`model: "opus"` at spawn — a mistake in shared code costs more than the model does) |
+| **Roles** | scout → dev → **techlead check** (`playbooks/quick.md`) | per playbook (po, techlead, dev, investigators, monitor) | `implement.md` § Heavy: breakdown first, then each TASK-n as a full run, PO always present |
+| **Models** | scout + dev as defined (Sonnet); the `techlead` check runs on the techlead's default (Opus) — spawned only for the check | as defined (dev + investigator Sonnet, techlead/po Opus) | as standard — every role on its default; no model escalation at any weight |
 | **Direction** | `context.md § Change` written by the scout *is* the direction: files, exact change, gates; no brief, memo or agreement | brief + memo + agreement | breakdown plan + per-task agreement |
 | **Gates** | only what the touched files trigger: lint + type-check + the test files covering the touched module (full suite only if the repo is tiny) | dev rules: scoped to changed packages, widened to consumers of shared code | full suite per stack touched + consumers; architecture checker mandatory |
-| **Review** | scout **check** on the frozen diff: matches the request, nothing else touched, gates ran; blockers → dev; still wrong after 2 rounds → re-weigh to standard | techlead (+ PO acceptance) on the frozen tree | same, plus impact-range section mandatory (checklist E), per task |
+| **Review** | `techlead` **check** on the frozen diff — diff-only, blockers only: matches the request, nothing else touched, gates ran and are quoted; no re-design, no suggestions; blockers → dev; still wrong after 2 rounds → re-weigh to standard | techlead (+ PO acceptance) on the frozen tree | same, plus impact-range section mandatory (checklist E), per task |
 | **Monitor / rotation** | none — a quick run ends before a budget matters | yes | yes |
 | **Deliverable** | uncommitted diff + a suggested commit message (no `PR-PRE.md`) | uncommitted diff + `PR-PRE.md` | plan + per-task diffs + `PR-PRE.md` |
 
@@ -130,7 +130,7 @@ Blocking = stop and wait (anything architectural, any unanswered behaviour quest
 
 ## Frozen-tree reviews
 
-No review starts until the dev confirms "stopped editing" and the monitor reports **frozen** (`git status --short` + `git diff --stat` identical across one tick, `watch.sh` mode `freeze`). During reviews the monitor runs in mode `review` and reports any tree movement. Reviewers record `git status --short` at start and re-check at end; a moved tree voids the review — stop, report, re-freeze, restart. The dev makes no edits while a review is running.
+No review starts until the dev confirms "stopped editing" and the monitor reports **frozen** (`git status --short` + `git diff HEAD` identical across one tick — content-level, covering staged and unstaged changes, not just the file list — `watch.sh` mode `freeze`). During reviews the monitor runs in mode `review` and reports any tree movement. Reviewers record `git status --short` at start and re-check at end; a moved tree voids the review — stop, report, re-freeze, restart. The dev makes no edits while a review is running. The verifier is always the `techlead`, at every weight. At `quick` there is no monitor: the dev's "stopped editing" report is the freeze signal, and the techlead records `git status --short` at the start of the check and re-checks it at the end.
 
 ## Skill policy
 

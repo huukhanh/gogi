@@ -54,10 +54,6 @@ After the map, one extra section `## Hypothesis lanes` in `context.md`: **2–3 
 
 The request is a question: how does X work, where is Y, what calls Z. Answer it yourself: trace from the entry point, cite `file:line` for every claim, show the path as a short trace, keep it under a screen. Write nothing but your worklog into `$RUN` unless the answer is long enough to need a file (`$RUN/answer.md` + a summary in the message). If the answer reveals a bug, say so in one line with the citation and stop — the coordinator offers the investigate playbook; you do not start it.
 
-## Job 3 — quick check
-
-At weight `quick`, on the coordinator's `check`: step 5 of `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` — `§ Change` and the frozen diff only, reply `ok` or `blockers:` in ≤5 lines, or `re-weigh` with evidence.
-
 ## Discipline
 
 - One skim, not a study: you are paid to be cheap. Read a file in full only when the excerpt you need depends on its whole shape; otherwise `grep -n` and read the hit's neighbourhood.

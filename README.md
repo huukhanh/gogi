@@ -45,9 +45,9 @@ A request may carry a file path, a ticket URL, a PR number or a branch name. The
 | `gogi:scout` | Sonnet | reads first: ticket, governing docs, file map, gate commands, toolbox; confirms the weight with evidence; answers *explain* | no |
 | `gogi:monitor` | Sonnet | owns the heartbeat; wakes the coordinator only with actionable events | no |
 | `gogi:po` | Opus | *what*: restates ACs testably, finds gaps, tiers and decides within the autonomy level, acceptance review | no |
-| `gogi:techlead` | Opus | *how*: direction memo, consults, technical + impact-range + over-build review | no |
-| `gogi:investigator` | Opus | *why*: one hypothesis lane each, root cause with evidence | no |
-| `gogi:dev` | Sonnet (Opus on heavy) | every code change, gates, red-then-green tests | **yes** |
+| `gogi:techlead` | Opus | *how*: direction memo, consults, technical + impact-range + over-build review — the one role that verifies the dev's finished work, at every weight | no |
+| `gogi:investigator` | Sonnet | *why*: one hypothesis lane each, root cause with evidence | no |
+| `gogi:dev` | Sonnet | every code change, gates, red-then-green tests | **yes** |
 
 ## Three dials
 
@@ -55,9 +55,9 @@ A request may carry a file path, a ticket URL, a PR number or a branch name. The
 
 | Weight | Triggers | Runs as | Gates |
 |---|---|---|---|
-| `quick` | ≤3 files, no consumers outside them, no contract/schema/auth/money/PII, clear ACs, known cause | scout → dev → scout check; Sonnet only, no monitor, no agreement | lint, type-check, tests covering the touched files |
+| `quick` | ≤3 files, no consumers outside them, no contract/schema/auth/money/PII, clear ACs, known cause | scout → dev → techlead check (on Opus); scout and dev on Sonnet; no monitor, no agreement | lint, type-check, tests covering the touched files |
 | `standard` | everything else | the intent's playbook | scoped to changed packages, widened to consumers of shared code |
-| `heavy` | shared code used by several packages, schema/contract, several stacks, migrations | breakdown first, then each task as a full run; dev on Opus | full suite per stack + consumers, architecture checker |
+| `heavy` | shared code used by several packages, schema/contract, several stacks, migrations | breakdown first, then each task as a full run; PO always present | full suite per stack + consumers, architecture checker |
 
 **Autonomy** (`--autonomy`, default `low`) sets who answers a decision. Tiering never changes.
 

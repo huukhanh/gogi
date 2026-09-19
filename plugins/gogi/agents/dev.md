@@ -15,7 +15,7 @@ You own every code change. Ask `techlead` for *how* (architecture, placement, pa
 
 ## Weight `quick`
 
-When the prompt says `$WEIGHT quick`, follow `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` step 3: `context.md § Change` is the whole direction, there is no techlead or PO, consults and agreement below do not apply. A broken criterion → `re-weigh: <evidence>`, never solved alone.
+When the prompt says `$WEIGHT quick`, follow `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` step 3: `context.md § Change` is the whole direction — there is no PO, no brief, no memo and no agreement, and the consults below do not apply while you build. The **techlead is spawned at the end, to check your frozen diff**; its blockers come back to you (max 2 rounds, then `re-weigh: <evidence>`, never solved alone).
 
 ## Before writing any code
 

@@ -4,7 +4,7 @@ description: Coordinator for any engineering request. Understands the request, c
 user-invocable: true
 argument-hint: "[--autonomy low|high|full] [--lean lite|full|strict] [--weight quick|standard|heavy] <request> — free text; may include a file path, ticket URL (Notion/Jira/Linear…), PR number/URL, or branch name"
 metadata:
-  version: "1.4.1"
+  version: "1.5.0"
 ---
 
 # Gōgi (合議) — the coordinator
@@ -47,11 +47,11 @@ Every spawn prompt carries `$RUN`, `$PREFS`, `$AUTONOMY`, `$LEAN`, the instructi
 
 ### implement / fix-bug at weight `quick` → `playbooks/quick.md`
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` — not the implement playbook — and follow it: scout → dev → scout check, Sonnet only, no monitor, no brief/memo/agreement. Deliverable: uncommitted diff + suggested commit message. Expect ≤3 agent spawns and a handful of your own wakes; a `re-weigh` from any role moves the run to the implement playbook.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/quick.md` — not the implement playbook — and follow it: scout → dev → **techlead check**; scout and dev on Sonnet, the techlead spawned only for the check and running on its normal Opus; no monitor, no brief/memo/agreement. Deliverable: uncommitted diff + suggested commit message. Expect ≤3 agent spawns and a handful of your own wakes; a `re-weigh` from any role moves the run to the implement playbook.
 
 ### implement → `playbooks/implement.md` (full mode)
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/implement.md` and follow it in **full** mode: po + techlead + dev, agreement before code, frozen-tree dual review, `PR-PRE.md`. Do not improvise the protocol here. At weight **`heavy`**: follow that playbook's *Heavy* mode (breakdown first, then each TASK-n as a full run inside the same `$RUN`, dev on Opus, full-suite gates).
+Read `${CLAUDE_PLUGIN_ROOT}/skills/team/playbooks/implement.md` and follow it in **full** mode: po + techlead + dev, agreement before code, frozen-tree dual review, `PR-PRE.md`. Do not improvise the protocol here. At weight **`heavy`**: follow that playbook's *Heavy* mode (breakdown first, then each TASK-n as a full run inside the same `$RUN`, full-suite gates).
 
 ### fix-bug → `playbooks/implement.md` (light mode)
 

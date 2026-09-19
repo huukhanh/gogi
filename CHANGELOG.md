@@ -2,6 +2,15 @@
 
 Versions are tracked in `plugins/gogi/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `skills/team/SKILL.md`, bumped together.
 
+## 1.5.0
+
+- The investigator runs on Sonnet — the dev, scout and investigator are all Sonnet now, only techlead and po stay on Opus.
+- The techlead is the sole verifier of the dev's work at every weight: at `quick` the final check moves from the scout to the techlead (on Opus, spawned at check time, diff-only and blockers only). No mid-edit watching — the frozen-tree rule is unchanged.
+- No model escalation at any weight — heavy's `dev on Opus` override is removed; every weight now runs each role on its default.
+- `watch.sh` no longer exits code 1 on a clean, uneventful tick (a bare `[ cond ] && echo` as the script's last statement made its own exit code depend on that condition).
+- `watch.sh`'s exit-reason check no longer lets a backlogged comms entry beat a genuinely frozen tree: in `freeze`/`review` mode the tree condition is now checked before the general comms check, since that condition is specifically what the mode is waiting for and nothing is lost either way (new comms entries are still printed in the report regardless of which reason fired).
+- The freeze check is content-level, not just file-list-level: `watch.sh` hashes `git diff HEAD` (not `git diff --stat`), covering staged and unstaged changes, so an edit that rewrites words inside an already-changed line is no longer invisible to it. `conventions.md` § Frozen-tree reviews updated to match.
+
 ## 1.4.1
 
 - The run never appears in code: comments, test names and suggested commit messages may not mention a role, brief, memo, agreement, decision id, tier, level or run path (`code-comments.md`). `Provisional:` and ceiling comments state the assumption or limit only. Reviewers and the quick check treat a violation as a finding.

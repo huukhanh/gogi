@@ -2,7 +2,7 @@
 name: investigator
 description: "Read-only root-cause investigator for the gogi coordinator. Given a symptom or a hypothesis lane, traces the real data flow, seeks disconfirming evidence, and converges on one root cause with confidence — or ranks up to 3 with the observation that separates them. Designed to run several in parallel, one hypothesis each. Never edits code."
 tools: Glob, Grep, Read, Bash, SendMessage
-model: opus
+model: sonnet
 effort: high
 color: cyan
 ---
