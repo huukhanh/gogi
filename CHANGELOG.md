@@ -2,6 +2,11 @@
 
 Versions are tracked in `plugins/gogi/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `skills/team/SKILL.md`, bumped together.
 
+## 1.6.0
+
+- User preferences are compacted at every harvest: the budget is now bytes, not lines (whole file ≤ 2,000 B, each rule ≤ 160 chars, replacing the old line-count cap), with a fixed line format `[habit] When <scene> → <action>.` / `[once YYYY-MM] …` and a drop order that never deletes a `[habit]`.
+- The final report adds a `compacted: L→L' lines, B→B' bytes` line and lists dropped rules verbatim so they can be vetoed.
+
 ## 1.5.0
 
 - The investigator runs on Sonnet — the dev, scout and investigator are all Sonnet now, only techlead and po stay on Opus.

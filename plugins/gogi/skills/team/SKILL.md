@@ -4,7 +4,7 @@ description: Coordinator for any engineering request. Understands the request, c
 user-invocable: true
 argument-hint: "[--autonomy low|high|full] [--lean lite|full|strict] [--weight quick|standard|heavy] <request> — free text; may include a file path, ticket URL (Notion/Jira/Linear…), PR number/URL, or branch name"
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
 ---
 
 # Gōgi (合議) — the coordinator
@@ -87,4 +87,4 @@ No team beyond the scout, which was spawned in Step 0 with the question. Relay i
 
 ## Step 3 — Harvest preferences, report, stop
 
-**Harvest first** (conventions § User preferences, one grep over `comms.md`): every `user →` entry and `[big]` answer, every mid-run correction → generalised `When → do` rules merged into `$PREFS` (bump / promote / new / contradiction). Send the monitor `phase: done`, and run `${CLAUDE_PLUGIN_ROOT}/scripts/session-stats.sh "$RUN"` once more in the same Bash call. Then one final message: the deliverable (path + its Summary), the weight, autonomy and lean levels the run used (and any re-weigh, with the evidence), **not built / add when** and deliberate ceilings (from the dev's and techlead's reports), decisions made on the user's behalf (`[small]`, plus `[big]` and hard stops when decided under `high`/`full` — those first) and answers given (`[big]`), **preferences applied + the `$PREFS` harvest diff**, open questions, the session-stats totals line with heartbeat ticks and any rotations (`agents/*.md` § Generations), the run directory `$RUN` (transcript in `comms.md`, worklogs in `agents/`), and the single next step the user can say to continue. Do nothing further.
+**Harvest first** (conventions § User preferences, one grep over `comms.md`): every `user →` entry and `[big]` answer, every mid-run correction → generalised `When → <action>` rules merged and compacted into `$PREFS` (refresh / promote / new / contradiction; then the whole-file compaction and byte budget of the conventions). Send the monitor `phase: done`, and run `${CLAUDE_PLUGIN_ROOT}/scripts/session-stats.sh "$RUN"` once more in the same Bash call. Then one final message: the deliverable (path + its Summary), the weight, autonomy and lean levels the run used (and any re-weigh, with the evidence), **not built / add when** and deliberate ceilings (from the dev's and techlead's reports), decisions made on the user's behalf (`[small]`, plus `[big]` and hard stops when decided under `high`/`full` — those first) and answers given (`[big]`), **preferences applied + the `$PREFS` harvest diff, the `compacted: L→L' lines, B→B' bytes` line and any dropped rule verbatim**, open questions, the session-stats totals line with heartbeat ticks and any rotations (`agents/*.md` § Generations), the run directory `$RUN` (transcript in `comms.md`, worklogs in `agents/`), and the single next step the user can say to continue. Do nothing further.
