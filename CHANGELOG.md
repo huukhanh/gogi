@@ -4,8 +4,8 @@ Versions are tracked in `plugins/gogi/.claude-plugin/plugin.json`, `.claude-plug
 
 ## 1.6.0
 
-- User preferences are compacted at every harvest: the budget is now bytes, not lines (whole file ≤ 2,000 B, each rule ≤ 160 chars, replacing the old line-count cap), with a fixed line format `[habit] When <scene> → <action>.` / `[once YYYY-MM] …` and a drop order that never deletes a `[habit]`.
-- The final report adds a `compacted: L→L' lines, B→B' bytes` line and lists dropped rules verbatim so they can be vetoed.
+- User preferences are compacted at every harvest: each rule is reworded to the shortest form that keeps its meaning, duplicates are merged and same-scene instances generalised. Fixed line format `[habit] When <scene> → <action>.` / `[once] When <scene> → <action>.`. The old line-count cap and the 60-day `[once]` expiry are gone: no size limit, and a rule leaves only by merging, generalising, or being contradicted and settled by the user.
+- The final report adds a `compacted: L→L' lines, B→B' bytes` line and lists merged-away rules verbatim so they can be vetoed.
 
 ## 1.5.0
 
