@@ -101,7 +101,7 @@ Missing inputs (a repro, a log, which intent you meant) are asked at every level
 | `session.md` | per-agent and per-role token usage, last-turn context, rotations, heartbeat ticks |
 | reports | `investigation.md`, `review-*.md`, `plan.md`, `slim.md`, `PR-PRE.md` |
 
-Learned preferences go to `~/.claude/projects/<project>/memory/user-preferences.md` as `When <scene> → do <action>` rules; `[habit]` rules are applied without asking.
+Learned preferences go to `~/.claude/projects/<project>/memory/user-preferences.md` as `When <scene> → <action>` rules, reworded to the shortest form and merged at every harvest; `[habit]` rules are applied without asking.
 
 ## Layout
 
