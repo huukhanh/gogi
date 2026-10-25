@@ -2,6 +2,12 @@
 
 Versions are tracked in `plugins/gogi/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `skills/team/SKILL.md`, bumped together.
 
+## 1.7.0
+
+- Run folders carry the time to the second: `docs/.local/gogi/YYYY-MM-DD-HHMMSS-<intent>-<slug>/`, so same-day runs sort chronologically and stay distinct. Existing date-only folders are left as they are.
+- The review playbook is stricter: edge cases are enumerated per changed unit, including concurrency and parallel execution (named actors, interleavings, idempotency, partial writes); the impact range covers non-symbol contracts and side effects, every consumer is verified by a gate or a trace, and system state is checked after success, failure and upgrade. Coverage tables are always present.
+- A quick run re-weighs to a standard run when the diff adds shared mutable state, parallel execution or a new integration, so those changes get the full review.
+
 ## 1.6.0
 
 - User preferences are compacted at every harvest: each rule is reworded to the shortest form that keeps its meaning, duplicates are merged and same-scene instances generalised. Fixed line format `[habit] When <scene> → <action>.` / `[once] When <scene> → <action>.`. The old line-count cap and the 60-day `[once]` expiry are gone: no size limit, and a rule leaves only by merging, generalising, or being contradicted and settled by the user.

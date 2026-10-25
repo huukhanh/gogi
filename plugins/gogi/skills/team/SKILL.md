@@ -4,7 +4,7 @@ description: Coordinator for any engineering request. Understands the request, c
 user-invocable: true
 argument-hint: "[--autonomy low|high|full] [--lean lite|full|strict] [--weight quick|standard|heavy] <request> — free text; may include a file path, ticket URL (Notion/Jira/Linear…), PR number/URL, or branch name"
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 # Gōgi (合議) — the coordinator
@@ -19,13 +19,13 @@ You are the **coordinator**, and only that. You classify the request, spawn the 
 
 ## Step 0 — Preferences, autonomy, provisional intent, scout
 
-**One message**: read `$PREFS` (path in conventions § User preferences — it may already answer part of the request, add steps the user always wants, or downgrade a question you were about to ask); resolve `$AUTONOMY` (conventions § Autonomy level: `--autonomy low|high|full` in the arguments wins; else a phrase in the request — "decide everything yourself" / "don't ask me" → `full`, "only ask about the big stuff" → `high`; else a `[habit]` in `$PREFS`; else `low`); resolve `$LEAN` the same way (`--lean lite|full|strict`; "keep it minimal" / "do less" → `strict`, "build it as specified" → `lite`; `[habit]`; else `full`); resolve a **provisional `$WEIGHT`** (conventions § Weight: `--weight`; else from the request text; else `standard`); strip the flags from the request text; pick a **provisional intent** from the request text alone (table below); create `$RUN = docs/.local/gogi/{date}-{intent}-{slug}/` + `$RUN/agents/` (git-invisible per conventions).
+**One message**: read `$PREFS` (path in conventions § User preferences — it may already answer part of the request, add steps the user always wants, or downgrade a question you were about to ask); resolve `$AUTONOMY` (conventions § Autonomy level: `--autonomy low|high|full` in the arguments wins; else a phrase in the request — "decide everything yourself" / "don't ask me" → `full`, "only ask about the big stuff" → `high`; else a `[habit]` in `$PREFS`; else `low`); resolve `$LEAN` the same way (`--lean lite|full|strict`; "keep it minimal" / "do less" → `strict`, "build it as specified" → `lite`; `[habit]`; else `full`); resolve a **provisional `$WEIGHT`** (conventions § Weight: `--weight`; else from the request text; else `standard`); strip the flags from the request text; pick a **provisional intent** from the request text alone (table below); create `$RUN = docs/.local/gogi/$(date +%Y-%m-%d-%H%M%S)-{intent}-{slug}/` + `$RUN/agents/` (git-invisible per conventions).
 
 **Then, in the next message**, spawn **`gogi:scout`** (`name: scout`) with the request verbatim, `$RUN`, the provisional intent **and weight**, `$AUTONOMY`, `$LEAN`, `$PREFS`, and anything the request points at (file path, ticket URL, PR number, branch) — the scout fetches those, not you. Unless the provisional weight is `quick`, spawn **`gogi:monitor`** (`name: monitor`) in the same message with `$RUN` and `phase: build`; the monitor starts `watch.sh` and owns the heartbeat from here on; you never call `sleep`. (If the scout later raises a quick run to standard, spawn the monitor then.) The scout writes `context.md` + seeds `facts.md` and returns ≤15 lines: its intent recommendation, stacks/branch, `[user]` questions, pointers. For **explain** it answers the question itself instead. Nothing else is spawned until the scout reports.
 
 ## Step 1 — Classify
 
-Classify into **one** intent using the request and the scout's line, and **fix the weight** from the scout's evidence line (`weight: quick — 2 files, no external consumers, gates: …`); the scout's evidence beats your provisional guess, a `--weight` flag beats both. If the scout's finding changes the intent, `mv` `$RUN` to the new name. If two intents fit and the deliverable would differ (e.g. "look at this bug" = investigate only, or fix it?), or the scout listed a `[user]` question that blocks the run, ask **one** `AskUserQuestion` before spawning anyone else — this is a missing input, so it is asked at every autonomy level. State the chosen intent, weight, playbook, autonomy and lean level in one line before starting.
+Classify into **one** intent using the request and the scout's line, and **fix the weight** from the scout's evidence line (`weight: quick — 2 files, no external consumers, gates: …`); the scout's evidence beats your provisional guess, a `--weight` flag beats both. If the scout's finding changes the intent, `mv` `$RUN` to the new name — same timestamp and slug, only `{intent}` changes. If two intents fit and the deliverable would differ (e.g. "look at this bug" = investigate only, or fix it?), or the scout listed a `[user]` question that blocks the run, ask **one** `AskUserQuestion` before spawning anyone else — this is a missing input, so it is asked at every autonomy level. State the chosen intent, weight, playbook, autonomy and lean level in one line before starting.
 
 | Intent | Signals | Deliverable |
 |---|---|---|
