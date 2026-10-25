@@ -149,7 +149,7 @@ The plugin is **self-contained**: every deliverable (reports, plans, `PR-PRE.md`
 
 ## Knowledge hub (the run directory)
 
-One directory per run, inside the project, git-invisible: `docs/.local/gogi/{YYYY-MM-DD}-{intent}-{slug}/` (`git check-ignore docs/.local/` — if not ignored, add `docs/.local/` to `.git/info/exclude`, never to the tracked `.gitignore`). The coordinator creates it and passes the path (`$RUN`) to every agent. It exists so that **each file is read once by one agent and reused by all** — never let three roles cold-read the same twenty files.
+One directory per run, inside the project, git-invisible: `docs/.local/gogi/{YYYY-MM-DD}-{HHMMSS}-{intent}-{slug}/`, local time so same-day runs sort chronologically (`git check-ignore docs/.local/` — if not ignored, add `docs/.local/` to `.git/info/exclude`, never to the tracked `.gitignore`). The coordinator creates it and passes the path (`$RUN`) to every agent. It exists so that **each file is read once by one agent and reused by all** — never let three roles cold-read the same twenty files.
 
 ```
 $RUN/

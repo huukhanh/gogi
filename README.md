@@ -89,7 +89,7 @@ Missing inputs (a repro, a log, which intent you meant) are asked at every level
 
 ## What a run leaves behind
 
-`docs/.local/gogi/<date>-<intent>-<slug>/` in the project, git-invisible:
+`docs/.local/gogi/<YYYY-MM-DD>-<HHMMSS>-<intent>-<slug>/` in the project, git-invisible:
 
 | File | Holds |
 |---|---|
